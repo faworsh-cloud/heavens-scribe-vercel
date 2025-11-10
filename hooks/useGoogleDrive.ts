@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useRef, SetStateAction } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import { Keyword, BibleMaterialLocation, Sermon } from '../types';
+import { Keyword, BibleMaterialLocation, Sermon, UserProfile } from '../types';
 
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
 const APP_FILE_NAME = 'heavens_scribe_app_data.json';
 const BACKUP_KEY = 'sermon-prep-backup';
 
@@ -34,6 +34,7 @@ export const useGoogleDrive = (
     const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
     const [driveFileName, setDriveFileName] = useState<string | null>(null);
     const [isBackupAvailable, setIsBackupAvailable] = useState(false);
+    const [userProfile, setUserProfile] = useLocalStorage<UserProfile | null>('user-profile', null);
     const signInSuccessCallback = useRef<(() => void) | null>(null);
 
     useEffect(() => {
@@ -85,10 +86,24 @@ export const useGoogleDrive = (
                 const client = (window as any).google.accounts.oauth2.initTokenClient({
                     client_id: clientId,
                     scope: SCOPES,
-                    callback: (tokenResponse: any) => {
+                    callback: async (tokenResponse: any) => {
                         if (tokenResponse && tokenResponse.access_token) {
                             (window as any).gapi.client.setToken({ access_token: tokenResponse.access_token });
                             setIsSignedIn(true);
+                             try {
+                                const userInfoResponse = await (window as any).gapi.client.request({
+                                    path: 'https://www.googleapis.com/oauth2/v3/userinfo'
+                                });
+                                const profile = userInfoResponse.result;
+                                setUserProfile({
+                                    id: profile.sub,
+                                    name: profile.name,
+                                    email: profile.email,
+                                    picture: profile.picture,
+                                });
+                            } catch (err) {
+                                console.error("Error fetching user info:", err);
+                            }
                             findOrCreateFile();
                             if (signInSuccessCallback.current) {
                                 signInSuccessCallback.current();
@@ -132,6 +147,7 @@ export const useGoogleDrive = (
             setDriveFileId(null);
             setDriveFileName(null);
             setSyncStatus('idle');
+            setUserProfile(null);
         }
     };
 
@@ -230,7 +246,7 @@ export const useGoogleDrive = (
     
     const syncData = useCallback(async () => {
         if (!driveFileId || !isSignedIn) {
-            alert('Google Drive에 연결되지 않았습니다.');
+            alert('Google Drive에 연결되지 않았습니다. 먼저 로그인 해주세요.');
             return;
         }
         setSyncStatus('syncing');
@@ -328,5 +344,6 @@ export const useGoogleDrive = (
         syncData,
         isBackupAvailable,
         restoreFromBackup,
+        userProfile,
     };
 };
