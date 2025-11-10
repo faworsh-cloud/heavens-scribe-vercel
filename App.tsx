@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Keyword, Material, BibleMaterialLocation, Sermon } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -292,7 +293,7 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
-        // FIX: The type of 'item' was not being inferred correctly. Using a typed forEach loop.
+        // FIX: Replaced for...of with forEach and explicit type annotation to fix type inference issue.
         importedKeywords.forEach((item: ImportedKeyword) => {
           if (!item || !item.keyword) return;
 

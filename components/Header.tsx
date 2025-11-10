@@ -107,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         </div>
       )}
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 md:space-x-4">
         <button
           onClick={onToggleSidebar}
           className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none lg:hidden"
@@ -200,14 +200,6 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                 <GoogleDriveIcon className={`w-5 h-5 ${gdrive.isSignedIn ? syncIndicatorColor[gdrive.syncStatus] : 'text-gray-400'}`}/>
             </button>
         )}
-        <a
-          href={mailtoHref}
-          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-          aria-label="피드백 보내기"
-          title="피드백 보내기"
-        >
-          <EnvelopeIcon className="w-6 h-6" />
-        </a>
         <button
           onClick={onOpenUserGuide}
           className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
@@ -222,6 +214,14 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         >
           <Cog6ToothIcon className="w-6 h-6" />
         </button>
+        <a
+          href={mailtoHref}
+          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+          aria-label="피드백 보내기"
+          title="피드백 보내기 (faworsh@gmail.com)"
+        >
+          <EnvelopeIcon className="w-6 h-6" />
+        </a>
 
         {isDriveConfigured && (
             <div className="relative">
