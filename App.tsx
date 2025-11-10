@@ -601,6 +601,8 @@ const App: React.FC = () => {
             isUpdateExport={isUpdateExport}
             onImportAll={handleImportAllData}
             hwpConversionEnabled={hwpConversionEnabled}
+            apiKey={apiKey}
+            clientId={clientId}
         />
         <main className="flex flex-1 overflow-hidden">
           {renderMode()}

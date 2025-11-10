@@ -22,12 +22,16 @@ interface HeaderProps {
   isUpdateExport: boolean;
   onImportAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
   hwpConversionEnabled: boolean;
+  apiKey: string;
+  clientId: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUserGuide, gdrive, onSearch, onToggleSidebar, isDataDirty, onUpdate, isUpdateExport, onImportAll, hwpConversionEnabled }) => {
+const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUserGuide, gdrive, onSearch, onToggleSidebar, isDataDirty, onUpdate, isUpdateExport, onImportAll, hwpConversionEnabled, apiKey, clientId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  const isDriveConfigured = !!(apiKey && clientId);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,14 +142,16 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
             <SearchIcon className="h-4 w-4 text-gray-400" />
           </div>
         </form>
-        <button
-            onClick={gdrive.syncData}
-            disabled={!gdrive.isSignedIn}
-            className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-            title={gdrive.isSignedIn ? 'Google Drive에 지금 동기화' : '로그인하여 동기화 활성화'}
-        >
-            <GoogleDriveIcon className={`w-5 h-5 ${gdrive.isSignedIn ? syncIndicatorColor[gdrive.syncStatus] : 'text-gray-400'}`}/>
-        </button>
+        {isDriveConfigured && (
+            <button
+                onClick={gdrive.syncData}
+                disabled={!gdrive.isSignedIn}
+                className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                title={gdrive.isSignedIn ? 'Google Drive에 지금 동기화' : '로그인하여 동기화 활성화'}
+            >
+                <GoogleDriveIcon className={`w-5 h-5 ${gdrive.isSignedIn ? syncIndicatorColor[gdrive.syncStatus] : 'text-gray-400'}`}/>
+            </button>
+        )}
         <button
           onClick={onOpenUserGuide}
           className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
@@ -161,33 +167,35 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
           <Cog6ToothIcon className="w-6 h-6" />
         </button>
 
-         <div className="relative">
-            {gdrive.userProfile ? (
-                <button onClick={() => setIsProfileOpen(prev => !prev)} className="flex items-center focus:outline-none">
-                    <img src={gdrive.userProfile.picture} alt="User profile" className="w-8 h-8 rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ring-primary-500" />
-                </button>
-            ) : (
-                <button onClick={() => gdrive.handleSignIn()} className="px-3 py-1.5 text-sm font-semibold rounded-full transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600">
-                    로그인
-                </button>
-            )}
-            {isProfileOpen && gdrive.userProfile && (
-                <div ref={profileMenuRef} className="absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                    <div className="py-1">
-                        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{gdrive.userProfile.name}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{gdrive.userProfile.email}</p>
+        {isDriveConfigured && (
+            <div className="relative">
+                {gdrive.userProfile ? (
+                    <button onClick={() => setIsProfileOpen(prev => !prev)} className="flex items-center focus:outline-none">
+                        <img src={gdrive.userProfile.picture} alt="User profile" className="w-8 h-8 rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-800 ring-primary-500" />
+                    </button>
+                ) : (
+                    <button onClick={() => gdrive.handleSignIn()} className="px-3 py-1.5 text-sm font-semibold rounded-full transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600">
+                        로그인
+                    </button>
+                )}
+                {isProfileOpen && gdrive.userProfile && (
+                    <div ref={profileMenuRef} className="absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                        <div className="py-1">
+                            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{gdrive.userProfile.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{gdrive.userProfile.email}</p>
+                            </div>
+                            <button 
+                                onClick={() => { gdrive.handleSignOut(); setIsProfileOpen(false); }} 
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                                로그아웃
+                            </button>
                         </div>
-                        <button 
-                            onClick={() => { gdrive.handleSignOut(); setIsProfileOpen(false); }} 
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                            로그아웃
-                        </button>
                     </div>
-                </div>
-            )}
-        </div>
+                )}
+            </div>
+        )}
       </div>
     </header>
   );
