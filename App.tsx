@@ -2,6 +2,8 @@
 
 
 
+
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Keyword, Material, BibleMaterialLocation, Sermon } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -39,6 +41,19 @@ const App: React.FC = () => {
   const [fontSize, setFontSize] = useLocalStorage<FontSize>('font-size', 'base');
   const [useAbbreviation, setUseAbbreviation] = useLocalStorage('use-abbreviation', false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const sizeMap = {
+      sm: '14px',
+      base: '16px',
+      lg: '18px',
+      xl: '20px',
+    };
+    document.documentElement.style.fontSize = sizeMap[fontSize];
+    return () => {
+      document.documentElement.style.fontSize = '';
+    };
+  }, [fontSize]);
 
   // Data State
   const [keywords, setKeywords] = useLocalStorage<Keyword[]>('sermon-prep-keywords', []);
@@ -591,7 +606,7 @@ const App: React.FC = () => {
 
   return (
     <>
-      <div className={`flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans text-${fontSize}`}>
+      <div className={`flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans`}>
         <Header 
             mode={mode} 
             setMode={(m) => { setMode(m); setGlobalSearchTerm(''); }}
