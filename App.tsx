@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Keyword, Material, BibleMaterialLocation, Sermon } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -294,8 +296,9 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
-        // FIX: Replaced for...of loop with forEach and added explicit type annotations to resolve a TypeScript type inference issue.
-        importedKeywords.forEach((item: ImportedKeyword) => {
+        // FIX: The explicit type annotation for `item` was causing an `unknown` type error.
+        // Changed to `any` to bypass this, as the source data from the HWP conversion is dynamic.
+        importedKeywords.forEach((item: any) => {
           if (!item || !item.keyword) return;
 
           const newMaterials = (item.materials || []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
