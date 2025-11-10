@@ -36,6 +36,7 @@ export const useGoogleDrive = (
     const [isBackupAvailable, setIsBackupAvailable] = useState(false);
     const [userProfile, setUserProfile] = useLocalStorage<UserProfile | null>('user-profile', null);
     const signInSuccessCallback = useRef<(() => void) | null>(null);
+    const isDriveInitialized = useRef(false);
 
     useEffect(() => {
         const backup = window.localStorage.getItem(BACKUP_KEY);
@@ -43,32 +44,20 @@ export const useGoogleDrive = (
     }, []);
 
     useEffect(() => {
-        if (!apiKey) {
-            setGapiReady(false);
-            return;
-        }
         const script = document.createElement('script');
         script.src = "https://apis.google.com/js/api.js";
         script.async = true;
         script.defer = true;
         script.onload = () => {
             (window as any).gapi.load('client', () => {
-                (window as any).gapi.client.init({
-                    apiKey: apiKey,
-                    discoveryDocs: [DISCOVERY_DOC],
-                }).then(() => {
-                    setGapiReady(true);
-                }).catch((error: any) => {
-                    console.error("GAPI client init error:", error);
-                    setGapiReady(false);
-                });
+                setGapiReady(true);
             });
         };
         document.body.appendChild(script);
         return () => {
             document.body.removeChild(script);
         }
-    }, [apiKey]);
+    }, []);
 
     useEffect(() => {
         if (!clientId) {
@@ -104,7 +93,7 @@ export const useGoogleDrive = (
                             } catch (err) {
                                 console.error("Error fetching user info:", err);
                             }
-                            findOrCreateFile();
+                            
                             if (signInSuccessCallback.current) {
                                 signInSuccessCallback.current();
                                 signInSuccessCallback.current = null; // Use once
@@ -124,7 +113,7 @@ export const useGoogleDrive = (
          return () => {
             document.body.removeChild(script);
         }
-    }, [clientId]);
+    }, [clientId, setUserProfile]);
 
 
     const handleSignIn = (onSuccess?: () => void) => {
@@ -132,9 +121,9 @@ export const useGoogleDrive = (
             if (onSuccess) {
               signInSuccessCallback.current = onSuccess;
             }
-            tokenClient.requestAccessToken();
+            tokenClient.requestAccessToken({prompt: ''});
         } else {
-            alert('Google API가 준비되지 않았거나 API 정보가 올바르지 않습니다. 설정을 확인해주세요.');
+            alert('Google 로그인 서비스가 준비되지 않았습니다. Client ID가 올바르게 설정되었는지 확인 후 잠시 뒤 다시 시도해주세요.');
         }
     };
     
@@ -148,6 +137,7 @@ export const useGoogleDrive = (
             setDriveFileName(null);
             setSyncStatus('idle');
             setUserProfile(null);
+            isDriveInitialized.current = false;
         }
     };
 
@@ -204,26 +194,6 @@ export const useGoogleDrive = (
             return null;
         }
     }, [setDriveFileId]);
-    
-
-    const findOrCreateFile = useCallback(async () => {
-        let fileId = driveFileId;
-        if (!fileId) {
-            fileId = await findFile();
-        }
-        if (!fileId) {
-            if (window.confirm(`'${APP_FILE_NAME}' 파일을 Google Drive에서 찾을 수 없습니다. 새로 생성하시겠습니까?`)) {
-                fileId = await createFile();
-                if (fileId) {
-                    await uploadData(fileId, { keywords: localKeywords, bibleData: localBibleData, sermons: localSermons, lastModified: localLastModified });
-                }
-            }
-        }
-        if (fileId) {
-            setDriveFileId(fileId);
-            setDriveFileName(APP_FILE_NAME);
-        }
-    }, [driveFileId, findFile, createFile, setDriveFileId, localKeywords, localBibleData, localSermons, localLastModified, uploadData]);
 
     const downloadData = useCallback(async (fileId: string): Promise<DriveData | null> => {
         try {
@@ -245,17 +215,50 @@ export const useGoogleDrive = (
     }, []);
     
     const syncData = useCallback(async () => {
-        if (!driveFileId || !isSignedIn) {
+        if (!isSignedIn) {
             alert('Google Drive에 연결되지 않았습니다. 먼저 로그인 해주세요.');
             return;
         }
         setSyncStatus('syncing');
+
         try {
-            const driveData = await downloadData(driveFileId);
+            if (!isDriveInitialized.current) {
+                if (!apiKey) {
+                    alert('Google Drive 동기화를 사용하려면 설정에서 API 키를 입력해야 합니다.');
+                    setSyncStatus('error');
+                    return;
+                }
+                await (window as any).gapi.client.init({
+                    apiKey: apiKey,
+                    discoveryDocs: [DISCOVERY_DOC],
+                });
+                isDriveInitialized.current = true;
+            }
+
+            let fileId = driveFileId || await findFile();
+
+            if (!fileId) {
+                if (window.confirm(`'${APP_FILE_NAME}' 파일을 Google Drive에서 찾을 수 없습니다. 새로 생성하시겠습니까?`)) {
+                    fileId = await createFile();
+                    if (fileId) {
+                        await uploadData(fileId, { keywords: localKeywords, bibleData: localBibleData, sermons: localSermons, lastModified: localLastModified });
+                        alert('Google Drive에 새 데이터 파일을 생성하고 현재 데이터를 업로드했습니다.');
+                        setSyncStatus('synced');
+                        return;
+                    }
+                }
+                if (!fileId) {
+                    alert('Google Drive 파일을 설정할 수 없어 동기화를 중단합니다.');
+                    setSyncStatus('error');
+                    return;
+                }
+            }
+            
+            const driveData = await downloadData(fileId);
 
             if (!driveData) {
                 if (window.confirm('Drive에서 데이터를 가져오는 데 실패했습니다. 현재 로컬 데이터를 Drive에 업로드하시겠습니까?')) {
-                   await uploadData(driveFileId, { keywords: localKeywords, bibleData: localBibleData, sermons: localSermons, lastModified: localLastModified });
+                   await uploadData(fileId, { keywords: localKeywords, bibleData: localBibleData, sermons: localSermons, lastModified: localLastModified });
                    setSyncStatus('synced');
                    alert('로컬 데이터가 Google Drive에 업로드되었습니다.');
                 } else {
@@ -291,7 +294,7 @@ export const useGoogleDrive = (
                 }
             } else {
                 if (window.confirm('로컬 자료가 더 최신입니다. Google Drive에 업로드하시겠습니까?')) {
-                    await uploadData(driveFileId, localData);
+                    await uploadData(fileId, localData);
                     alert('Google Drive에 업로드되었습니다.');
                     setSyncStatus('synced');
                 } else {
@@ -301,10 +304,14 @@ export const useGoogleDrive = (
             }
         } catch (error) {
             console.error('Sync failed:', error);
-            alert('동기화 중 오류가 발생했습니다.');
+            alert('동기화 중 오류가 발생했습니다. API 키와 Client ID가 올바른지 확인해주세요.');
             setSyncStatus('error');
         }
-    }, [driveFileId, isSignedIn, localKeywords, localBibleData, localSermons, localLastModified, downloadData, uploadData, setLocalKeywords, setLocalBibleData, setLocalSermons, setLocalLastModified]);
+    }, [
+        isSignedIn, apiKey, driveFileId, localKeywords, localBibleData, localSermons, localLastModified, 
+        findFile, createFile, uploadData, downloadData, 
+        setLocalKeywords, setLocalBibleData, setLocalSermons, setLocalLastModified
+    ]);
 
     const restoreFromBackup = useCallback(() => {
         const backup = window.localStorage.getItem(BACKUP_KEY);
@@ -326,13 +333,6 @@ export const useGoogleDrive = (
           alert('사용 가능한 백업이 없습니다.');
         }
       }, [setLocalKeywords, setLocalBibleData, setLocalSermons, setLocalLastModified]);
-
-
-    useEffect(() => {
-        if (isSignedIn && driveFileId) {
-           findOrCreateFile();
-        }
-    }, [isSignedIn, driveFileId, findOrCreateFile]);
 
     return {
         isSignedIn,
