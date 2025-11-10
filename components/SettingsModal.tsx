@@ -32,6 +32,8 @@ interface SettingsModalProps {
   onImportAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onDownloadTemplate: () => void;
   isUpdateExport: boolean;
+  isAdminAuthenticated: boolean;
+  onUnlockAdminSettings: () => void;
   gdrive: {
     isSignedIn: boolean;
     isReady: boolean;
@@ -81,6 +83,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onImportAll,
     onDownloadTemplate,
     isUpdateExport,
+    isAdminAuthenticated,
+    onUnlockAdminSettings,
     gdrive
 }) => {
     const [localApiKey, setLocalApiKey] = useState(apiKey);
@@ -248,12 +252,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
            <div>
             <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">관리자</h3>
             <div className="space-y-2 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
-                <button onClick={onSetAdminPin} className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
-                    {hasAdminPin ? '관리자 PIN 변경' : '관리자 PIN 설정'}
-                </button>
-                <button onClick={onManageAnnouncement} className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
-                    공지사항 관리
-                </button>
+                {isAdminAuthenticated ? (
+                    <>
+                        <button onClick={onSetAdminPin} className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
+                            {hasAdminPin ? '관리자 PIN 변경' : '관리자 PIN 설정'}
+                        </button>
+                        <button onClick={onManageAnnouncement} className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
+                            공지사항 관리
+                        </button>
+                    </>
+                ) : (
+                    <button onClick={onUnlockAdminSettings} className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600">
+                        관리자 설정 잠금 해제
+                    </button>
+                )}
             </div>
           </div>
 
@@ -341,7 +353,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="flex justify-between items-center gap-2 flex-wrap">
                         <a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
                             <InformationCircleIcon className="w-4 h-4" />
-                            <span>API 키 발급 방법</span>
+                            <span>Gemini API 키 발급 방법</span>
                         </a>
                         <button onClick={handleGeminiApiSave} className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
                             Gemini 키 저장
@@ -349,17 +361,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                 </div>
             )}
-          </div>
-        </div>
-
-        <div className="mt-8 flex justify-end flex-shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            닫기
-          </button>
+           </div>
         </div>
       </div>
     </div>

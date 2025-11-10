@@ -199,12 +199,30 @@ const App: React.FC = () => {
   const handleAdminAction = (action: () => void) => {
     if (isAdminAuthenticated) {
       action();
-    } else if (adminPinHash) {
+      return;
+    }
+
+    if (adminPinHash) {
       setPendingAdminAction(() => action);
       setIsAdminAuthModalOpen(true);
     } else {
-      alert('관리자 PIN이 설정되지 않았습니다. 설정에서 먼저 PIN을 설정해주세요.');
+      // No PIN exists, so this is a setup action. Proceed.
+      action();
     }
+  };
+
+  const handleUnlockAdminSettings = () => {
+    if (isAdminAuthenticated) return;
+    
+    // Call handleAdminAction with a no-op to trigger authentication flow
+    // If PIN exists, it will ask for it.
+    // If not, it will do nothing, but the UI should have a way to set PIN.
+    handleAdminAction(() => {
+      // If there's no PIN, opening Admin Pin Modal is the only way to "unlock".
+      if (!adminPinHash) {
+        setIsAdminPinModalOpen(true);
+      }
+    });
   };
 
   const handleAdminPinVerify = async (pin: string) => {
@@ -387,7 +405,8 @@ const App: React.FC = () => {
             continue;
           }
 
-          const newMaterials = (Array.isArray(item.materials) ? item.materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
+          // FIX: Cast item to `any` to safely access `materials` property, as the compiler cannot infer its existence from the type guard above.
+          const newMaterials = (Array.isArray((item as any).materials) ? (item as any).materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
             ...m,
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString()
@@ -712,7 +731,10 @@ const App: React.FC = () => {
       />
       <SettingsModal
         isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
+        onClose={() => {
+          setIsSettingsModalOpen(false);
+          setIsAdminAuthenticated(false); // Reset admin auth on settings close
+        }}
         fontSize={fontSize}
         setFontSize={setFontSize}
         useAbbreviation={useAbbreviation}
@@ -721,9 +743,11 @@ const App: React.FC = () => {
         pinEnabled={pinEnabled}
         setPinEnabled={setPinEnabled}
         hasPin={!!pinHash}
-        onSetAdminPin={() => setIsAdminPinModalOpen(true)}
+        onSetAdminPin={() => handleAdminAction(() => setIsAdminPinModalOpen(true))}
         hasAdminPin={!!adminPinHash}
         onManageAnnouncement={() => handleAdminAction(() => setIsAdminAnnouncementModalOpen(true))}
+        isAdminAuthenticated={isAdminAuthenticated}
+        onUnlockAdminSettings={handleUnlockAdminSettings}
         apiKey={apiKey}
         setApiKey={setApiKey}
         clientId={clientId}
