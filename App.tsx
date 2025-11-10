@@ -406,6 +406,7 @@ const App: React.FC = () => {
           }
 
           // FIX: Cast item to `any` to safely access `materials` property, as the compiler cannot infer its existence from the type guard above.
+          // FIX: Cast item to `any` to safely access `materials` property, as the compiler cannot infer its existence from the type guard above.
           const newMaterials = (Array.isArray((item as any).materials) ? (item as any).materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
             ...m,
             id: crypto.randomUUID(),
