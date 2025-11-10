@@ -12,7 +12,7 @@ interface SearchResults {
 interface GlobalSearchResultsProps {
     results: SearchResults;
     searchTerm: string;
-    onClick: (item: any, type: 'keyword' | 'bible' | 'sermon') => void;
+    onClick: (item: Keyword | BibleMaterialLocation | Sermon, type: 'keyword' | 'bible' | 'sermon') => void;
 }
 
 const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({ results, searchTerm, onClick }) => {

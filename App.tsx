@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Keyword, Material, BibleMaterialLocation, Sermon, Announcement } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useGoogleDrive } from './hooks/useGoogleDrive';
@@ -121,6 +121,7 @@ const App: React.FC = () => {
   // Toast and Backup State
   const [toast, setToast] = useState<{message: string} | null>(null);
   const [importBackup, setImportBackup] = useLocalStorage<AppData | null>('sermon-prep-import-backup', null);
+  const sessionAnnouncementClosed = useRef(false);
   
   // Imported file state (in-memory)
   const [originalWorkbook, setOriginalWorkbook] = useState<any | null>(null);
@@ -173,7 +174,7 @@ const App: React.FC = () => {
         setHiddenAnnouncements(updatedHiddenAnnouncements);
     }
 
-    if (announcement && announcement.enabled && !updatedHiddenAnnouncements[announcement.id]) {
+    if (announcement && announcement.enabled && !updatedHiddenAnnouncements[announcement.id] && !sessionAnnouncementClosed.current) {
         setIsAnnouncementModalOpen(true);
     }
   }, [announcement, hiddenAnnouncements, setHiddenAnnouncements]);
@@ -184,6 +185,7 @@ const App: React.FC = () => {
       setHiddenAnnouncements(prev => ({ ...prev, [announcement.id]: expires }));
     }
     setIsAnnouncementModalOpen(false);
+    sessionAnnouncementClosed.current = true;
   };
   
   const handleOpenAnnouncement = () => {
@@ -559,13 +561,14 @@ const App: React.FC = () => {
     setMode('search');
   }
   
-  const handleSearchResultClick = (item: any, type: 'keyword' | 'bible' | 'sermon') => {
+  // FIX: Replace `any` with a specific union type for better type safety.
+  const handleSearchResultClick = (item: Keyword | BibleMaterialLocation | Sermon, type: 'keyword' | 'bible' | 'sermon') => {
       if (type === 'keyword') {
           setMode('keyword');
           setSelectedKeywordId(item.id);
       } else if (type === 'bible') {
           setMode('bible');
-          setSelectedBook(item.book);
+          setSelectedBook((item as BibleMaterialLocation).book);
       } else if (type === 'sermon') {
           setMode('sermon');
           setSelectedSermonId(item.id);
