@@ -19,9 +19,6 @@ import GoogleApiGuideModal from './components/GoogleApiGuideModal';
 import GlobalSearchResults from './components/GlobalSearchResults';
 import UserGuideModal from './components/UserGuideModal';
 import AnnouncementModal from './components/AnnouncementModal';
-import AdminAuthModal from './components/AdminAuthModal';
-import AdminPinModal from './components/AdminPinModal';
-import AdminAnnouncementModal from './components/AdminAnnouncementModal';
 
 type AppMode = 'keyword' | 'bible' | 'sermon' | 'search' | 'hwp';
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
@@ -32,6 +29,25 @@ interface AppData {
   sermons: Sermon[];
   lastModified: string;
 }
+
+const CURRENT_ANNOUNCEMENT: Announcement | null = {
+    id: 'announcement-help-guide-20240728', // Unique ID for this announcement version
+    content: `**'도움말'은 시작 화면 우측 상단에 '?'를 클릭하시면 볼 수 있습니다. 꼭 읽어 주세요.**
+
+## 자료 관리 방법은 2가지 입니다.
+
+**1. 앱의 데이터를 엑셀 파일로 변환시켜 관리 (추천)**
+이 방법으로 충분히 사용이 가능합니다. 기본적으로 하나의 편집 수단(예: 컴퓨터 또는 노트북)에서만 편집하고, 다른 기기(패드, 핸드폰)는 보기 용도로 사용하는 것을 권장합니다.
+
+**2. Google Drive 동기화 기능 (실시간 연동)**
+이 기능을 사용하면 패드, 핸드폰, 컴퓨터 등 여러 기기에서 데이터를 동기화하며 사용할 수 있습니다.
+
+---
+
+앱의 유무와 관련 없이 모든 자료는 엑셀 파일로 정리되어 자신의 컴퓨터에 안전하게 보관할 수 있으니, 마음껏 사용해 보시기 바랍니다.`,
+    enabled: true,
+};
+
 
 const App: React.FC = () => {
   // Global State
@@ -65,11 +81,6 @@ const App: React.FC = () => {
   const [pinHash, setPinHash] = useLocalStorage<string | null>('sermon-prep-pin', null);
   const [pinEnabled, setPinEnabled] = useLocalStorage<boolean>('sermon-prep-pin-enabled', false);
   
-  // Admin Auth State
-  const [adminPinHash, setAdminPinHash] = useLocalStorage<string | null>('sermon-prep-admin-pin', null);
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false); // Session-only
-  const [pendingAdminAction, setPendingAdminAction] = useState<(() => void) | null>(null);
-
   // API Keys
   const [apiKey, setApiKey] = useLocalStorage<string>('gdrive-api-key', '');
   const [clientId, setClientId] = useLocalStorage<string>('gdrive-client-id', '');
@@ -83,9 +94,6 @@ const App: React.FC = () => {
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isApiGuideOpen, setIsApiGuideOpen] = useState(false);
   const [isUserGuideModalOpen, setIsUserGuideModalOpen] = useState(false);
-  const [isAdminPinModalOpen, setIsAdminPinModalOpen] = useState(false);
-  const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState(false);
-  const [isAdminAnnouncementModalOpen, setIsAdminAnnouncementModalOpen] = useState(false);
 
   // Edit State
   const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
@@ -106,13 +114,9 @@ const App: React.FC = () => {
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   
   // Announcement State
-  const [localAnnouncement, setLocalAnnouncement] = useLocalStorage<Announcement | null>('sermon-prep-local-announcement', {
-    id: 'initial-local-announcement',
-    content: '관리자가 공지사항을 설정할 수 있습니다.',
-    enabled: false,
-  });
+  const [announcement] = useState(CURRENT_ANNOUNCEMENT);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
-  const [seenAnnouncementId, setSeenAnnouncementId] = useLocalStorage<string | null>('seen-announcement-id', null);
+  const [hiddenAnnouncements, setHiddenAnnouncements] = useLocalStorage<{ [id: string]: number }>('hidden-announcements', {});
   
   // Toast and Backup State
   const [toast, setToast] = useState<{message: string} | null>(null);
@@ -155,16 +159,35 @@ const App: React.FC = () => {
 
   // Show announcement on app load
   useEffect(() => {
-    if (localAnnouncement && localAnnouncement.enabled && localAnnouncement.id !== seenAnnouncementId) {
-      setIsAnnouncementModalOpen(true);
+    // Clean up expired hidden announcements
+    const now = Date.now();
+    const updatedHiddenAnnouncements = { ...hiddenAnnouncements };
+    let changed = false;
+    for (const id in updatedHiddenAnnouncements) {
+        if (updatedHiddenAnnouncements[id] < now) {
+            delete updatedHiddenAnnouncements[id];
+            changed = true;
+        }
     }
-  }, [localAnnouncement, seenAnnouncementId]);
+    if (changed) {
+        setHiddenAnnouncements(updatedHiddenAnnouncements);
+    }
 
-  const handleCloseAnnouncement = () => {
-    if (localAnnouncement) {
-      setSeenAnnouncementId(localAnnouncement.id);
+    if (announcement && announcement.enabled && !updatedHiddenAnnouncements[announcement.id]) {
+        setIsAnnouncementModalOpen(true);
+    }
+  }, [announcement, hiddenAnnouncements, setHiddenAnnouncements]);
+
+  const handleCloseAnnouncement = (hideFor7Days: boolean) => {
+    if (announcement && hideFor7Days) {
+      const expires = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      setHiddenAnnouncements(prev => ({ ...prev, [announcement.id]: expires }));
     }
     setIsAnnouncementModalOpen(false);
+  };
+  
+  const handleOpenAnnouncement = () => {
+    setIsAnnouncementModalOpen(true);
   };
 
   // Google Drive Sync
@@ -193,64 +216,6 @@ const App: React.FC = () => {
     setPinEnabled(true);
     setIsPinModalOpen(false);
     alert('PIN이 설정되었습니다.');
-  };
-
-  // Admin Auth
-  const handleAdminAction = (action: () => void) => {
-    if (isAdminAuthenticated) {
-      action();
-      return;
-    }
-
-    if (adminPinHash) {
-      setPendingAdminAction(() => action);
-      setIsAdminAuthModalOpen(true);
-    } else {
-      // No PIN exists, so this is a setup action. Proceed.
-      action();
-    }
-  };
-
-  const handleUnlockAdminSettings = () => {
-    if (isAdminAuthenticated) return;
-    
-    // Call handleAdminAction with a no-op to trigger authentication flow
-    // If PIN exists, it will ask for it.
-    // If not, it will do nothing, but the UI should have a way to set PIN.
-    handleAdminAction(() => {
-      // If there's no PIN, opening Admin Pin Modal is the only way to "unlock".
-      if (!adminPinHash) {
-        setIsAdminPinModalOpen(true);
-      }
-    });
-  };
-
-  const handleAdminPinVerify = async (pin: string) => {
-    if (adminPinHash && await verifyPin(pin, adminPinHash)) {
-      setIsAdminAuthenticated(true);
-      setIsAdminAuthModalOpen(false);
-      if (pendingAdminAction) {
-        pendingAdminAction();
-        setPendingAdminAction(null);
-      }
-    } else {
-      alert('관리자 PIN이 잘못되었습니다.');
-    }
-  };
-
-  const handleSetAdminPin = async (pin: string) => {
-    const newHash = await hashPin(pin);
-    setAdminPinHash(newHash);
-    setIsAdminPinModalOpen(false);
-    setIsAdminAuthenticated(true); // Automatically auth after setting a new pin
-    alert('관리자 PIN이 설정되었습니다.');
-  };
-
-  const handleSaveAnnouncement = (announcement: Omit<Announcement, 'id'>) => {
-    const newId = crypto.randomUUID(); // Give it a new ID on save to ensure it reappears for users
-    setLocalAnnouncement({ ...announcement, id: newId });
-    setIsAdminAnnouncementModalOpen(false);
-    alert('공지사항이 저장되었습니다.');
   };
   
 
@@ -400,14 +365,13 @@ const App: React.FC = () => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
         for (const item of importedKeywords) {
-          // FIX: Add type guards to safely handle potentially malformed data from AI conversion.
+          // Add type guards to safely handle potentially malformed data from AI conversion.
           if (typeof item !== 'object' || item === null || typeof item.keyword !== 'string' || !item.keyword) {
             continue;
           }
 
-          // FIX: Cast item to `any` to safely access `materials` property, as the compiler cannot infer its existence from the type guard above.
-          // FIX: Cast item to `any` to safely access `materials` property, as the compiler cannot infer its existence from the type guard above.
-          const newMaterials = (Array.isArray((item as any).materials) ? (item as any).materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
+          // Handle potentially malformed materials array
+          const newMaterials = (Array.isArray(item.materials) ? item.materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
             ...m,
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString()
@@ -702,6 +666,7 @@ const App: React.FC = () => {
             setMode={(m) => { setMode(m); setGlobalSearchTerm(''); }}
             onOpenSettings={() => setIsSettingsModalOpen(true)}
             onOpenUserGuide={() => setIsUserGuideModalOpen(true)}
+            onOpenAnnouncement={handleOpenAnnouncement}
             gdrive={gdrive}
             onSearch={handleGlobalSearch}
             onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -732,10 +697,7 @@ const App: React.FC = () => {
       />
       <SettingsModal
         isOpen={isSettingsModalOpen}
-        onClose={() => {
-          setIsSettingsModalOpen(false);
-          setIsAdminAuthenticated(false); // Reset admin auth on settings close
-        }}
+        onClose={() => setIsSettingsModalOpen(false)}
         fontSize={fontSize}
         setFontSize={setFontSize}
         useAbbreviation={useAbbreviation}
@@ -744,11 +706,6 @@ const App: React.FC = () => {
         pinEnabled={pinEnabled}
         setPinEnabled={setPinEnabled}
         hasPin={!!pinHash}
-        onSetAdminPin={() => handleAdminAction(() => setIsAdminPinModalOpen(true))}
-        hasAdminPin={!!adminPinHash}
-        onManageAnnouncement={() => handleAdminAction(() => setIsAdminAnnouncementModalOpen(true))}
-        isAdminAuthenticated={isAdminAuthenticated}
-        onUnlockAdminSettings={handleUnlockAdminSettings}
         apiKey={apiKey}
         setApiKey={setApiKey}
         clientId={clientId}
@@ -783,24 +740,7 @@ const App: React.FC = () => {
       <AnnouncementModal
         isOpen={isAnnouncementModalOpen}
         onClose={handleCloseAnnouncement}
-        content={localAnnouncement?.content || ''}
-      />
-      <AdminAuthModal
-        isOpen={isAdminAuthModalOpen}
-        onClose={() => setIsAdminAuthModalOpen(false)}
-        onVerify={handleAdminPinVerify}
-      />
-      <AdminPinModal
-        isOpen={isAdminPinModalOpen}
-        onClose={() => setIsAdminPinModalOpen(false)}
-        onPinSet={handleSetAdminPin}
-        pinHash={adminPinHash}
-      />
-      <AdminAnnouncementModal
-        isOpen={isAdminAnnouncementModalOpen}
-        onClose={() => setIsAdminAnnouncementModalOpen(false)}
-        onSave={handleSaveAnnouncement}
-        announcement={localAnnouncement}
+        content={announcement?.content || ''}
       />
       <Toast />
     </>

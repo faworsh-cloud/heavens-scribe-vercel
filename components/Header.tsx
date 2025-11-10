@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SearchIcon, Cog6ToothIcon, GoogleDriveIcon, XMarkIcon, Bars3Icon, ArrowUpTrayIcon, QuestionMarkCircleIcon, EnvelopeIcon } from './icons';
+import { SearchIcon, Cog6ToothIcon, GoogleDriveIcon, XMarkIcon, Bars3Icon, ArrowUpTrayIcon, QuestionMarkCircleIcon, EnvelopeIcon, ExclamationCircleIcon } from './icons';
 import { UserProfile } from '../types';
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   setMode: (mode: 'keyword' | 'bible' | 'sermon' | 'hwp') => void;
   onOpenSettings: () => void;
   onOpenUserGuide: () => void;
+  onOpenAnnouncement: () => void;
   gdrive: {
     isSignedIn: boolean;
     syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
@@ -26,7 +27,7 @@ interface HeaderProps {
   clientId: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUserGuide, gdrive, onSearch, onToggleSidebar, isDataDirty, onUpdate, isUpdateExport, onImportAll, hwpConversionEnabled, apiKey, clientId }) => {
+const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUserGuide, onOpenAnnouncement, gdrive, onSearch, onToggleSidebar, isDataDirty, onUpdate, isUpdateExport, onImportAll, hwpConversionEnabled, apiKey, clientId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -169,6 +170,13 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                 <GoogleDriveIcon className={`w-5 h-5 ${gdrive.isSignedIn ? syncIndicatorColor[gdrive.syncStatus] : 'text-gray-400'}`}/>
             </button>
         )}
+        <button
+          onClick={onOpenAnnouncement}
+          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+          aria-label="공지사항"
+        >
+          <ExclamationCircleIcon className="w-6 h-6" />
+        </button>
         <button
           onClick={onOpenUserGuide}
           className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
