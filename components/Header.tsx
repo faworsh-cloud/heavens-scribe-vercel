@@ -30,8 +30,10 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
   const [searchTerm, setSearchTerm] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const feedbackMenuRef = useRef<HTMLDivElement>(null);
 
   const isDriveConfigured = !!(apiKey && clientId);
 
@@ -62,6 +64,9 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
             setIsProfileOpen(false);
         }
+        if (feedbackMenuRef.current && !feedbackMenuRef.current.contains(event.target as Node)) {
+            setIsFeedbackOpen(false);
+        }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -69,6 +74,15 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
     };
 }, []);
 
+  const handleCopyEmail = () => {
+    navigator.clipboard.writeText('faworsh@gmail.com').then(() => {
+        alert('이메일 주소가 복사되었습니다.');
+        setIsFeedbackOpen(false);
+    }).catch(err => {
+        console.error('Failed to copy email: ', err);
+        alert('이메일 주소 복사에 실패했습니다.');
+    });
+  };
 
   const syncIndicatorColor = {
     idle: 'text-gray-400',
@@ -77,8 +91,6 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
     error: 'text-red-400',
   };
   
-  const mailtoHref = `mailto:faworsh@gmail.com?subject=${encodeURIComponent("Heaven's Scribe 피드백")}&body=${encodeURIComponent("앱 사용 중 발견한 문제점이나 개선 아이디어를 자유롭게 작성해주세요.\n\n")}`;
-
 
   return (
     <header className="relative bg-white dark:bg-gray-800 shadow-md p-3 flex justify-between items-center z-10 flex-shrink-0">
@@ -214,14 +226,32 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         >
           <Cog6ToothIcon className="w-6 h-6" />
         </button>
-        <a
-          href={mailtoHref}
-          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-          aria-label="피드백 보내기"
-          title="피드백 보내기 (faworsh@gmail.com)"
-        >
-          <EnvelopeIcon className="w-6 h-6" />
-        </a>
+        <div className="relative">
+          <button
+            onClick={() => setIsFeedbackOpen(prev => !prev)}
+            className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+            aria-label="피드백 보내기"
+            title="피드백 보내기"
+          >
+            <EnvelopeIcon className="w-6 h-6" />
+          </button>
+          {isFeedbackOpen && (
+            <div ref={feedbackMenuRef} className="absolute right-0 mt-2 w-64 origin-top-right bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+              <div className="p-4">
+                <p className="text-sm font-semibold text-gray-800 dark:text-white mb-2">관리자 이메일</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 p-2 rounded-md break-all">
+                    faworsh@gmail.com
+                </p>
+                <button
+                  onClick={handleCopyEmail}
+                  className="mt-3 w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                >
+                  주소 복사
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {isDriveConfigured && (
             <div className="relative">

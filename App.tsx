@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Keyword, Material, BibleMaterialLocation, Sermon } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -293,9 +294,9 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
-        // FIX: Replaced for...of with forEach and explicit type annotation to fix type inference issue.
-        importedKeywords.forEach((item: ImportedKeyword) => {
-          if (!item || !item.keyword) return;
+        // FIX: Using a for...of loop to avoid potential type inference issues with forEach in nested callbacks.
+        for (const item of importedKeywords) {
+          if (!item || !item.keyword) continue;
 
           const newMaterials = (item.materials || []).map((m) => ({
             ...m,
@@ -314,7 +315,7 @@ const App: React.FC = () => {
               createdAt: new Date().toISOString()
             });
           }
-        });
+        }
         return Array.from(keywordsMap.values());
       });
     } else if (type === 'bible') {
