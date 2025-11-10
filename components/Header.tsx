@@ -29,10 +29,8 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUserGuide, gdrive, onSearch, onToggleSidebar, isDataDirty, onUpdate, isUpdateExport, onImportAll, hwpConversionEnabled, apiKey, clientId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
-  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const feedbackMenuRef = useRef<HTMLDivElement>(null);
 
   const isDriveConfigured = !!(apiKey && clientId);
@@ -41,9 +39,6 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
     e.preventDefault();
     if (searchTerm.trim()) {
       onSearch(searchTerm.trim());
-      if (isMobileSearchOpen) {
-        setIsMobileSearchOpen(false);
-      }
     }
   };
 
@@ -52,12 +47,6 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         setSearchTerm('');
     }
   }, [mode]);
-  
-  useEffect(() => {
-    if (isMobileSearchOpen) {
-      mobileSearchInputRef.current?.focus();
-    }
-  }, [isMobileSearchOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -94,31 +83,6 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
 
   return (
     <header className="relative bg-white dark:bg-gray-800 shadow-md p-3 flex justify-between items-center z-10 flex-shrink-0">
-      {isMobileSearchOpen && (
-        <div className="absolute inset-0 bg-white dark:bg-gray-800 flex items-center p-3 z-20 sm:hidden">
-            <form onSubmit={handleSearchSubmit} className="relative flex-grow">
-                <input
-                    ref={mobileSearchInputRef}
-                    type="search"
-                    placeholder="전체 검색..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-full bg-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <SearchIcon className="h-4 w-4 text-gray-400" />
-                </div>
-            </form>
-            <button 
-                onClick={() => setIsMobileSearchOpen(false)} 
-                className="p-2 ml-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-                aria-label="검색 닫기"
-            >
-                <XMarkIcon className="w-6 h-6" />
-            </button>
-        </div>
-      )}
-
       <div className="flex items-center space-x-2 md:space-x-4">
         <button
           onClick={onToggleSidebar}
@@ -160,7 +124,20 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         </select>
       </div>
 
-      <div className="flex items-center space-x-2 sm:space-x-3">
+      <div className="flex items-center space-x-2">
+        <form onSubmit={handleSearchSubmit} className="relative">
+          <input
+            type="search"
+            placeholder="전체 검색..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-32 md:w-48 pl-9 pr-3 py-2 text-sm border rounded-full bg-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <SearchIcon className="h-4 w-4 text-gray-400" />
+          </div>
+        </form>
+
         {isDataDirty ? (
           <button
             onClick={onUpdate}
@@ -168,7 +145,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
             title="엑셀 파일을 최신 내용으로 업데이트 (Ctrl+S)"
           >
             <ArrowUpTrayIcon className="w-5 h-5"/>
-            <span className="hidden sm:inline">파일 업데이트</span>
+            <span className="whitespace-nowrap">파일 업데이트</span>
             <span className="hidden lg:inline text-xs">(Ctrl+S)</span>
           </button>
         ) : !isUpdateExport && (
@@ -177,31 +154,11 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
               title="시작하려면 엑셀 파일에서 데이터를 가져오세요."
             >
               <ArrowUpTrayIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">전체 데이터 가져오기</span>
+              <span className="whitespace-nowrap">전체 데이터 가져오기</span>
               <input type="file" accept=".xlsx, .xls" className="hidden" onChange={onImportAll} />
             </label>
         )}
-        <form onSubmit={handleSearchSubmit} className="relative hidden sm:block">
-          <input
-            type="search"
-            placeholder="전체 검색..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-32 sm:w-48 pl-9 pr-3 py-2 text-sm border rounded-full bg-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <SearchIcon className="h-4 w-4 text-gray-400" />
-          </div>
-        </form>
         
-        <button
-          onClick={() => setIsMobileSearchOpen(true)}
-          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none sm:hidden"
-          aria-label="검색"
-        >
-          <SearchIcon className="w-6 h-6" />
-        </button>
-
         {isDriveConfigured && (
             <button
                 onClick={gdrive.syncData}
