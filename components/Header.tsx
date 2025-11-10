@@ -91,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         >
           <Bars3Icon className="w-6 h-6" />
         </button>
-        <h1 className="text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400 hidden sm:block">Heaven's scribe</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400 hidden sm:block">Heaven's Scribe</h1>
       </div>
 
       <nav className="hidden md:flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1 rounded-full">
