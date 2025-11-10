@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, InformationCircleIcon, ArrowDownTrayIcon, ArrowUpTrayIcon } from './icons';
+import { XMarkIcon, InformationCircleIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, ChevronDownIcon } from './icons';
 
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
 
@@ -80,6 +80,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const [localApiKey, setLocalApiKey] = useState(apiKey);
     const [localClientId, setLocalClientId] = useState(clientId);
     const [localGeminiApiKey, setLocalGeminiApiKey] = useState(geminiApiKey);
+    const [isGeminiSettingsExpanded, setIsGeminiSettingsExpanded] = useState(false);
 
 
     useEffect(() => {
@@ -237,41 +238,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
-          {/* AI (Gemini) API Settings */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">AI 변환 기능 (Gemini)</h3>
-            <div className="space-y-4 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">HWP 자동 변환 기능 사용</span>
-                  <button
-                    type="button" onClick={() => setHwpConversionEnabled(!hwpConversionEnabled)}
-                    className={`${hwpConversionEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2`}
-                    role="switch" aria-checked={hwpConversionEnabled}
-                  >
-                    <span aria-hidden="true" className={`${hwpConversionEnabled ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
-                  </button>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                    HWP 변환 기능을 사용하려면 Google AI Studio에서 발급받은 Gemini API 키가 필요합니다. 이 키에 대한 사용 비용은 사용자에게 직접 청구됩니다.
-                </p>
-                <div>
-                    <label htmlFor="gemini-api-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Gemini API 키</label>
-                    <input id="gemini-api-key" type="password" value={localGeminiApiKey} onChange={(e) => setLocalGeminiApiKey(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
-                </div>
-                <div className="flex justify-between items-center gap-2 flex-wrap">
-                    <a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
-                        <InformationCircleIcon className="w-4 h-4" />
-                        <span>API 키 발급 방법</span>
-                    </a>
-                    <button onClick={handleGeminiApiSave} className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
-                        Gemini 키 저장
-                    </button>
-                </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-200 dark:border-gray-700"></div>
-
            {/* Drive Sync Settings */}
           <div>
             <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">Google Drive 동기화</h3>
@@ -318,6 +284,50 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     )}
                </div>
             </div>
+          </div>
+          
+          <div className="border-t border-gray-200 dark:border-gray-700"></div>
+          
+          {/* AI (Gemini) API Settings */}
+          <div>
+            <button
+                onClick={() => setIsGeminiSettingsExpanded(!isGeminiSettingsExpanded)}
+                className="w-full flex justify-between items-center text-left text-lg font-medium text-gray-800 dark:text-white"
+                aria-expanded={isGeminiSettingsExpanded}
+            >
+                <span>AI 변환 기능 (Gemini)</span>
+                <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${isGeminiSettingsExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            {isGeminiSettingsExpanded && (
+                <div className="mt-3 space-y-4 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">HWP 자동 변환 기능 사용</span>
+                      <button
+                        type="button" onClick={() => setHwpConversionEnabled(!hwpConversionEnabled)}
+                        className={`${hwpConversionEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2`}
+                        role="switch" aria-checked={hwpConversionEnabled}
+                      >
+                        <span aria-hidden="true" className={`${hwpConversionEnabled ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        HWP 변환 기능을 사용하려면 Google AI Studio에서 발급받은 Gemini API 키가 필요합니다. 이 키에 대한 사용 비용은 사용자에게 직접 청구됩니다.
+                    </p>
+                    <div>
+                        <label htmlFor="gemini-api-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Gemini API 키</label>
+                        <input id="gemini-api-key" type="password" value={localGeminiApiKey} onChange={(e) => setLocalGeminiApiKey(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
+                    </div>
+                    <div className="flex justify-between items-center gap-2 flex-wrap">
+                        <a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                            <InformationCircleIcon className="w-4 h-4" />
+                            <span>API 키 발급 방법</span>
+                        </a>
+                        <button onClick={handleGeminiApiSave} className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+                            Gemini 키 저장
+                        </button>
+                    </div>
+                </div>
+            )}
           </div>
         </div>
 

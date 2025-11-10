@@ -4,6 +4,8 @@
 
 
 
+
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Keyword, Material, BibleMaterialLocation, Sermon } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -311,9 +313,8 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
-        // FIX: The explicit type annotation for `item` was causing an `unknown` type error.
-        // Changed to `any` to bypass this, as the source data from the HWP conversion is dynamic.
-        importedKeywords.forEach((item: any) => {
+        // FIX: Explicitly typed `item` as `ImportedKeyword` to fix `unknown` type error.
+        importedKeywords.forEach((item: ImportedKeyword) => {
           if (!item || !item.keyword) return;
 
           const newMaterials = (item.materials || []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
