@@ -14,6 +14,9 @@ interface SettingsModalProps {
   pinEnabled: boolean;
   setPinEnabled: (enabled: boolean) => void;
   hasPin: boolean;
+  onSetAdminPin: () => void;
+  hasAdminPin: boolean;
+  onManageAnnouncement: () => void;
   apiKey: string;
   setApiKey: (key: string) => void;
   clientId: string;
@@ -60,6 +63,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     pinEnabled,
     setPinEnabled,
     hasPin,
+    onSetAdminPin,
+    hasAdminPin,
+    onManageAnnouncement,
     apiKey,
     setApiKey,
     clientId,
@@ -220,7 +226,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">보안</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">PIN 잠금 사용</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">사용자 PIN 잠금</span>
                 <button
                   type="button" onClick={() => setPinEnabled(!pinEnabled)} disabled={!hasPin}
                   className={`${pinEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -231,8 +237,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
                <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">PIN을 먼저 설정해야 잠금 기능을 사용할 수 있습니다.</p>
               <button onClick={onSetPin} className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
-                {hasPin ? 'PIN 변경' : 'PIN 설정'}
+                {hasPin ? '사용자 PIN 변경' : '사용자 PIN 설정'}
               </button>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-200 dark:border-gray-700"></div>
+
+           {/* Admin Settings */}
+           <div>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">관리자</h3>
+            <div className="space-y-2 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
+                <button onClick={onSetAdminPin} className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
+                    {hasAdminPin ? '관리자 PIN 변경' : '관리자 PIN 설정'}
+                </button>
+                <button onClick={onManageAnnouncement} className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
+                    공지사항 관리
+                </button>
             </div>
           </div>
 

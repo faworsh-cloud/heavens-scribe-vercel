@@ -44,3 +44,9 @@ export interface UserProfile {
   email: string;
   picture: string;
 }
+
+export interface Announcement {
+  id: string;
+  content: string;
+  enabled: boolean;
+}

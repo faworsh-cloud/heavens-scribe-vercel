@@ -1,13 +1,5 @@
-
-
-
-
-
-
-
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Keyword, Material, BibleMaterialLocation, Sermon } from './types';
+import { Keyword, Material, BibleMaterialLocation, Sermon, Announcement } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useGoogleDrive } from './hooks/useGoogleDrive';
 import { hashPin, verifyPin } from './utils/auth';
@@ -26,6 +18,10 @@ import PinManagementModal from './components/PinManagementModal';
 import GoogleApiGuideModal from './components/GoogleApiGuideModal';
 import GlobalSearchResults from './components/GlobalSearchResults';
 import UserGuideModal from './components/UserGuideModal';
+import AnnouncementModal from './components/AnnouncementModal';
+import AdminAuthModal from './components/AdminAuthModal';
+import AdminPinModal from './components/AdminPinModal';
+import AdminAnnouncementModal from './components/AdminAnnouncementModal';
 
 type AppMode = 'keyword' | 'bible' | 'sermon' | 'search' | 'hwp';
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
@@ -64,15 +60,21 @@ const App: React.FC = () => {
   const [lastModified, setLastModified] = useLocalStorage('sermon-prep-last-modified', new Date().toISOString());
   const [lastSavedTimestamp, setLastSavedTimestamp] = useLocalStorage<string | null>('sermon-prep-last-saved-ts', null);
 
-  // Auth State
+  // User Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinHash, setPinHash] = useLocalStorage<string | null>('sermon-prep-pin', null);
   const [pinEnabled, setPinEnabled] = useLocalStorage<boolean>('sermon-prep-pin-enabled', false);
+  
+  // Admin Auth State
+  const [adminPinHash, setAdminPinHash] = useLocalStorage<string | null>('sermon-prep-admin-pin', null);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false); // Session-only
+  const [pendingAdminAction, setPendingAdminAction] = useState<(() => void) | null>(null);
+
+  // API Keys
   const [apiKey, setApiKey] = useLocalStorage<string>('gdrive-api-key', '');
   const [clientId, setClientId] = useLocalStorage<string>('gdrive-client-id', '');
   const [geminiApiKey, setGeminiApiKey] = useLocalStorage<string>('gemini-api-key', '');
   const [hwpConversionEnabled, setHwpConversionEnabled] = useLocalStorage<boolean>('hwp-conversion-enabled', false);
-
 
   // Modal State
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
@@ -81,6 +83,9 @@ const App: React.FC = () => {
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isApiGuideOpen, setIsApiGuideOpen] = useState(false);
   const [isUserGuideModalOpen, setIsUserGuideModalOpen] = useState(false);
+  const [isAdminPinModalOpen, setIsAdminPinModalOpen] = useState(false);
+  const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState(false);
+  const [isAdminAnnouncementModalOpen, setIsAdminAnnouncementModalOpen] = useState(false);
 
   // Edit State
   const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
@@ -99,6 +104,15 @@ const App: React.FC = () => {
 
   // Search State
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  
+  // Announcement State
+  const [localAnnouncement, setLocalAnnouncement] = useLocalStorage<Announcement | null>('sermon-prep-local-announcement', {
+    id: 'initial-local-announcement',
+    content: '관리자가 공지사항을 설정할 수 있습니다.',
+    enabled: false,
+  });
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [seenAnnouncementId, setSeenAnnouncementId] = useLocalStorage<string | null>('seen-announcement-id', null);
   
   // Toast and Backup State
   const [toast, setToast] = useState<{message: string} | null>(null);
@@ -139,11 +153,26 @@ const App: React.FC = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [setLastModified]);
 
+  // Show announcement on app load
+  useEffect(() => {
+    if (localAnnouncement && localAnnouncement.enabled && localAnnouncement.id !== seenAnnouncementId) {
+      setIsAnnouncementModalOpen(true);
+    }
+  }, [localAnnouncement, seenAnnouncementId]);
+
+  const handleCloseAnnouncement = () => {
+    if (localAnnouncement) {
+      setSeenAnnouncementId(localAnnouncement.id);
+    }
+    setIsAnnouncementModalOpen(false);
+  };
 
   // Google Drive Sync
   const gdrive = useGoogleDrive(apiKey, clientId, keywords, setKeywords, bibleData, setBibleData, sermons, setSermons, lastModified, setLastModified);
 
-  // Authentication
+  // --- Authentication Handlers (User & Admin) ---
+
+  // User Auth
   useEffect(() => {
     if (!pinEnabled || !pinHash) {
       setIsAuthenticated(true);
@@ -164,6 +193,46 @@ const App: React.FC = () => {
     setPinEnabled(true);
     setIsPinModalOpen(false);
     alert('PIN이 설정되었습니다.');
+  };
+
+  // Admin Auth
+  const handleAdminAction = (action: () => void) => {
+    if (isAdminAuthenticated) {
+      action();
+    } else if (adminPinHash) {
+      setPendingAdminAction(() => action);
+      setIsAdminAuthModalOpen(true);
+    } else {
+      alert('관리자 PIN이 설정되지 않았습니다. 설정에서 먼저 PIN을 설정해주세요.');
+    }
+  };
+
+  const handleAdminPinVerify = async (pin: string) => {
+    if (adminPinHash && await verifyPin(pin, adminPinHash)) {
+      setIsAdminAuthenticated(true);
+      setIsAdminAuthModalOpen(false);
+      if (pendingAdminAction) {
+        pendingAdminAction();
+        setPendingAdminAction(null);
+      }
+    } else {
+      alert('관리자 PIN이 잘못되었습니다.');
+    }
+  };
+
+  const handleSetAdminPin = async (pin: string) => {
+    const newHash = await hashPin(pin);
+    setAdminPinHash(newHash);
+    setIsAdminPinModalOpen(false);
+    setIsAdminAuthenticated(true); // Automatically auth after setting a new pin
+    alert('관리자 PIN이 설정되었습니다.');
+  };
+
+  const handleSaveAnnouncement = (announcement: Omit<Announcement, 'id'>) => {
+    const newId = crypto.randomUUID(); // Give it a new ID on save to ensure it reappears for users
+    setLocalAnnouncement({ ...announcement, id: newId });
+    setIsAdminAnnouncementModalOpen(false);
+    alert('공지사항이 저장되었습니다.');
   };
   
 
@@ -198,7 +267,6 @@ const App: React.FC = () => {
     setBibleData(prev => prev.map(loc => {
         if (loc.id === locationId) {
             const updatedMaterials = loc.materials.filter(m => m.id !== materialId);
-            // If no materials left, remove the location itself.
             if (updatedMaterials.length === 0) return null;
             return { ...loc, materials: updatedMaterials };
         }
@@ -313,11 +381,13 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
-        // FIX: Explicitly typed `item` as `ImportedKeyword` to fix `unknown` type error.
-        importedKeywords.forEach((item: ImportedKeyword) => {
-          if (!item || !item.keyword) return;
+        for (const item of importedKeywords) {
+          // FIX: Add type guards to safely handle potentially malformed data from AI conversion.
+          if (typeof item !== 'object' || item === null || typeof item.keyword !== 'string' || !item.keyword) {
+            continue;
+          }
 
-          const newMaterials = (item.materials || []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
+          const newMaterials = (Array.isArray(item.materials) ? item.materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
             ...m,
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString()
@@ -334,7 +404,7 @@ const App: React.FC = () => {
               createdAt: new Date().toISOString()
             });
           }
-        });
+        }
         return Array.from(keywordsMap.values());
       });
     } else if (type === 'bible') {
@@ -512,7 +582,6 @@ const App: React.FC = () => {
       } else if (type === 'bible') {
           setMode('bible');
           setSelectedBook(item.book);
-          // could add scroll to logic here
       } else if (type === 'sermon') {
           setMode('sermon');
           setSelectedSermonId(item.id);
@@ -652,6 +721,9 @@ const App: React.FC = () => {
         pinEnabled={pinEnabled}
         setPinEnabled={setPinEnabled}
         hasPin={!!pinHash}
+        onSetAdminPin={() => setIsAdminPinModalOpen(true)}
+        hasAdminPin={!!adminPinHash}
+        onManageAnnouncement={() => handleAdminAction(() => setIsAdminAnnouncementModalOpen(true))}
         apiKey={apiKey}
         setApiKey={setApiKey}
         clientId={clientId}
@@ -682,6 +754,28 @@ const App: React.FC = () => {
       <UserGuideModal
         isOpen={isUserGuideModalOpen}
         onClose={() => setIsUserGuideModalOpen(false)}
+      />
+      <AnnouncementModal
+        isOpen={isAnnouncementModalOpen}
+        onClose={handleCloseAnnouncement}
+        content={localAnnouncement?.content || ''}
+      />
+      <AdminAuthModal
+        isOpen={isAdminAuthModalOpen}
+        onClose={() => setIsAdminAuthModalOpen(false)}
+        onVerify={handleAdminPinVerify}
+      />
+      <AdminPinModal
+        isOpen={isAdminPinModalOpen}
+        onClose={() => setIsAdminPinModalOpen(false)}
+        onPinSet={handleSetAdminPin}
+        pinHash={adminPinHash}
+      />
+      <AdminAnnouncementModal
+        isOpen={isAdminAnnouncementModalOpen}
+        onClose={() => setIsAdminAnnouncementModalOpen(false)}
+        onSave={handleSaveAnnouncement}
+        announcement={localAnnouncement}
       />
       <Toast />
     </>
