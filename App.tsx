@@ -294,11 +294,11 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
-        // FIX: Using a for...of loop to avoid potential type inference issues with forEach in nested callbacks.
-        for (const item of importedKeywords) {
-          if (!item || !item.keyword) continue;
+        // FIX: Replaced for...of loop with forEach and added explicit type annotations to resolve a TypeScript type inference issue.
+        importedKeywords.forEach((item: ImportedKeyword) => {
+          if (!item || !item.keyword) return;
 
-          const newMaterials = (item.materials || []).map((m) => ({
+          const newMaterials = (item.materials || []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
             ...m,
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString()
@@ -315,7 +315,7 @@ const App: React.FC = () => {
               createdAt: new Date().toISOString()
             });
           }
-        }
+        });
         return Array.from(keywordsMap.values());
       });
     } else if (type === 'bible') {
