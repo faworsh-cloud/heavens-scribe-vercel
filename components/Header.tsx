@@ -21,9 +21,10 @@ interface HeaderProps {
   onUpdate: () => void;
   isUpdateExport: boolean;
   onImportAll: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  hwpConversionEnabled: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUserGuide, gdrive, onSearch, onToggleSidebar, isDataDirty, onUpdate, isUpdateExport, onImportAll }) => {
+const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUserGuide, gdrive, onSearch, onToggleSidebar, isDataDirty, onUpdate, isUpdateExport, onImportAll, hwpConversionEnabled }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -84,9 +85,11 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         <button onClick={() => setMode('sermon')} className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors ${mode === 'sermon' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
           설교
         </button>
-        <button onClick={() => setMode('hwp')} className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors ${mode === 'hwp' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-          HWP 변환
-        </button>
+        {hwpConversionEnabled && (
+            <button onClick={() => setMode('hwp')} className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors ${mode === 'hwp' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+            HWP 변환
+            </button>
+        )}
       </nav>
       {/* Mobile nav */}
       <div className="md:hidden">
@@ -98,7 +101,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
             <option value="keyword">키워드</option>
             <option value="bible">성경</option>
             <option value="sermon">설교</option>
-            <option value="hwp">HWP 변환</option>
+            {hwpConversionEnabled && <option value="hwp">HWP 변환</option>}
         </select>
       </div>
 

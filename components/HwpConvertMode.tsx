@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
-import { DocumentArrowRightIcon, ArrowDownTrayIcon, PlusIcon, TrashIcon } from './icons';
+import { DocumentArrowRightIcon, ArrowDownTrayIcon, PlusIcon, TrashIcon, Cog6ToothIcon } from './icons';
 import { BibleMaterialLocation, Material, Sermon } from '../types';
 
 declare const XLSX: any;
@@ -10,14 +10,36 @@ type ConversionType = 'keyword' | 'bible' | 'sermon';
 interface HwpConvertModeProps {
     onImportData: (data: any[], type: ConversionType) => void;
     geminiApiKey: string;
+    hwpConversionEnabled: boolean;
+    onOpenSettings: () => void;
 }
 
-const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApiKey }) => {
+const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApiKey, hwpConversionEnabled, onOpenSettings }) => {
     const [conversionType, setConversionType] = useState<ConversionType>('keyword');
     const [hwpContent, setHwpContent] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [previewData, setPreviewData] = useState<any[] | null>(null);
+
+    if (!hwpConversionEnabled) {
+        return (
+          <div className="flex-1 p-4 sm:p-6 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50">
+            <div className="text-center max-w-lg p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+              <Cog6ToothIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">HWP 변환 기능이 비활성화되었습니다.</h2>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
+                이 기능을 사용하려면 설정에서 'HWP 자동 변환 기능 사용' 옵션을 켜주세요.
+              </p>
+              <button
+                onClick={onOpenSettings}
+                className="mt-6 inline-flex items-center gap-2 px-6 py-3 text-base font-semibold text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700"
+              >
+                설정으로 이동
+              </button>
+            </div>
+          </div>
+        );
+      }
 
     const handleConvert = async () => {
         if (!geminiApiKey) {

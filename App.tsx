@@ -50,6 +50,7 @@ const App: React.FC = () => {
   const [apiKey, setApiKey] = useLocalStorage<string>('gdrive-api-key', '');
   const [clientId, setClientId] = useLocalStorage<string>('gdrive-client-id', '');
   const [geminiApiKey, setGeminiApiKey] = useLocalStorage<string>('gemini-api-key', '');
+  const [hwpConversionEnabled, setHwpConversionEnabled] = useLocalStorage<boolean>('hwp-conversion-enabled', false);
 
 
   // Modal State
@@ -89,6 +90,12 @@ const App: React.FC = () => {
   
   const isDataDirty = isUpdateExport && lastSavedTimestamp !== null && lastModified > lastSavedTimestamp;
 
+  // Switch to keyword mode if HWP conversion is disabled
+  useEffect(() => {
+    if (!hwpConversionEnabled && mode === 'hwp') {
+      setMode('keyword');
+    }
+  }, [hwpConversionEnabled, mode, setMode]);
 
   useEffect(() => {
     if (toast) {
@@ -556,7 +563,12 @@ const App: React.FC = () => {
           onSelectSermon={(id) => { setSelectedSermonId(id); setIsSidebarOpen(false); }}
         />
       case 'hwp':
-        return <HwpConvertMode geminiApiKey={geminiApiKey} onImportData={handleImportData} />;
+        return <HwpConvertMode 
+            geminiApiKey={geminiApiKey} 
+            onImportData={handleImportData} 
+            hwpConversionEnabled={hwpConversionEnabled}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+        />;
       case 'search':
         return searchResults && <GlobalSearchResults results={searchResults} searchTerm={globalSearchTerm} onClick={handleSearchResultClick} />;
       default:
@@ -588,6 +600,7 @@ const App: React.FC = () => {
             onUpdate={handleUnifiedExport}
             isUpdateExport={isUpdateExport}
             onImportAll={handleImportAllData}
+            hwpConversionEnabled={hwpConversionEnabled}
         />
         <main className="flex flex-1 overflow-hidden">
           {renderMode()}
@@ -623,6 +636,8 @@ const App: React.FC = () => {
         setClientId={setClientId}
         geminiApiKey={geminiApiKey}
         setGeminiApiKey={setGeminiApiKey}
+        hwpConversionEnabled={hwpConversionEnabled}
+        setHwpConversionEnabled={setHwpConversionEnabled}
         onOpenApiGuide={() => setIsApiGuideOpen(true)}
         gdrive={gdrive}
         isImportBackupAvailable={!!importBackup}

@@ -20,6 +20,8 @@ interface SettingsModalProps {
   setClientId: (id: string) => void;
   geminiApiKey: string;
   setGeminiApiKey: (key: string) => void;
+  hwpConversionEnabled: boolean;
+  setHwpConversionEnabled: (enabled: boolean) => void;
   onOpenApiGuide: () => void;
   isImportBackupAvailable: boolean;
   onRestoreFromImportBackup: () => void;
@@ -64,6 +66,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setClientId,
     geminiApiKey,
     setGeminiApiKey,
+    hwpConversionEnabled,
+    setHwpConversionEnabled,
     onOpenApiGuide,
     isImportBackupAvailable,
     onRestoreFromImportBackup,
@@ -237,6 +241,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           <div>
             <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">AI 변환 기능 (Gemini)</h3>
             <div className="space-y-4 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">HWP 자동 변환 기능 사용</span>
+                  <button
+                    type="button" onClick={() => setHwpConversionEnabled(!hwpConversionEnabled)}
+                    className={`${hwpConversionEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2`}
+                    role="switch" aria-checked={hwpConversionEnabled}
+                  >
+                    <span aria-hidden="true" className={`${hwpConversionEnabled ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
+                  </button>
+                </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                     HWP 변환 기능을 사용하려면 Google AI Studio에서 발급받은 Gemini API 키가 필요합니다. 이 키에 대한 사용 비용은 사용자에게 직접 청구됩니다.
                 </p>
