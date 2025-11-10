@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SearchIcon, Cog6ToothIcon, GoogleDriveIcon, XMarkIcon, Bars3Icon, ArrowUpTrayIcon, QuestionMarkCircleIcon } from './icons';
+import { SearchIcon, Cog6ToothIcon, GoogleDriveIcon, XMarkIcon, Bars3Icon, ArrowUpTrayIcon, QuestionMarkCircleIcon, EnvelopeIcon } from './icons';
 import { UserProfile } from '../types';
 
 interface HeaderProps {
@@ -29,7 +29,9 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUserGuide, gdrive, onSearch, onToggleSidebar, isDataDirty, onUpdate, isUpdateExport, onImportAll, hwpConversionEnabled, apiKey, clientId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
 
   const isDriveConfigured = !!(apiKey && clientId);
 
@@ -37,15 +39,24 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
     e.preventDefault();
     if (searchTerm.trim()) {
       onSearch(searchTerm.trim());
+      if (isMobileSearchOpen) {
+        setIsMobileSearchOpen(false);
+      }
     }
   };
 
   useEffect(() => {
-      if (mode !== 'search') {
-          setSearchTerm('');
-      }
+    if (mode !== 'search') {
+        setSearchTerm('');
+    }
   }, [mode]);
   
+  useEffect(() => {
+    if (isMobileSearchOpen) {
+      mobileSearchInputRef.current?.focus();
+    }
+  }, [isMobileSearchOpen]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
         if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
@@ -65,9 +76,37 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
     synced: 'text-green-400',
     error: 'text-red-400',
   };
+  
+  const mailtoHref = `mailto:faworsh@gmail.com?subject=${encodeURIComponent("Heaven's Scribe 피드백")}&body=${encodeURIComponent("앱 사용 중 발견한 문제점이나 개선 아이디어를 자유롭게 작성해주세요.\n\n")}`;
+
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md p-3 flex justify-between items-center z-10 flex-shrink-0">
+    <header className="relative bg-white dark:bg-gray-800 shadow-md p-3 flex justify-between items-center z-10 flex-shrink-0">
+      {isMobileSearchOpen && (
+        <div className="absolute inset-0 bg-white dark:bg-gray-800 flex items-center p-3 z-20 sm:hidden">
+            <form onSubmit={handleSearchSubmit} className="relative flex-grow">
+                <input
+                    ref={mobileSearchInputRef}
+                    type="search"
+                    placeholder="전체 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-full bg-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <SearchIcon className="h-4 w-4 text-gray-400" />
+                </div>
+            </form>
+            <button 
+                onClick={() => setIsMobileSearchOpen(false)} 
+                className="p-2 ml-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+                aria-label="검색 닫기"
+            >
+                <XMarkIcon className="w-6 h-6" />
+            </button>
+        </div>
+      )}
+
       <div className="flex items-center space-x-2">
         <button
           onClick={onToggleSidebar}
@@ -79,18 +118,18 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         <h1 className="text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400 hidden sm:block">Heaven's scribe</h1>
       </div>
 
-      <nav className="hidden md:flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-full">
-        <button onClick={() => setMode('keyword')} className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors ${mode === 'keyword' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+      <nav className="hidden md:flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1 rounded-full">
+        <button onClick={() => setMode('keyword')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${mode === 'keyword' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
           키워드
         </button>
-        <button onClick={() => setMode('bible')} className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors ${mode === 'bible' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+        <button onClick={() => setMode('bible')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${mode === 'bible' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
           성경
         </button>
-        <button onClick={() => setMode('sermon')} className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors ${mode === 'sermon' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+        <button onClick={() => setMode('sermon')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${mode === 'sermon' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
           설교
         </button>
         {hwpConversionEnabled && (
-            <button onClick={() => setMode('hwp')} className={`px-3 py-1.5 text-sm font-semibold rounded-full transition-colors ${mode === 'hwp' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+            <button onClick={() => setMode('hwp')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${mode === 'hwp' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
             HWP 변환
             </button>
         )}
@@ -142,6 +181,15 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
             <SearchIcon className="h-4 w-4 text-gray-400" />
           </div>
         </form>
+        
+        <button
+          onClick={() => setIsMobileSearchOpen(true)}
+          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none sm:hidden"
+          aria-label="검색"
+        >
+          <SearchIcon className="w-6 h-6" />
+        </button>
+
         {isDriveConfigured && (
             <button
                 onClick={gdrive.syncData}
@@ -152,6 +200,14 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                 <GoogleDriveIcon className={`w-5 h-5 ${gdrive.isSignedIn ? syncIndicatorColor[gdrive.syncStatus] : 'text-gray-400'}`}/>
             </button>
         )}
+        <a
+          href={mailtoHref}
+          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+          aria-label="피드백 보내기"
+          title="피드백 보내기"
+        >
+          <EnvelopeIcon className="w-6 h-6" />
+        </a>
         <button
           onClick={onOpenUserGuide}
           className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"

@@ -292,8 +292,7 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
-        // FIX: The for...of loop was replaced with forEach and an explicit type for `item`
-        // to resolve a potential type inference issue within the callback.
+        // FIX: The type of 'item' was not being inferred correctly. Using a typed forEach loop.
         importedKeywords.forEach((item: ImportedKeyword) => {
           if (!item || !item.keyword) return;
 
