@@ -178,11 +178,7 @@ const App: React.FC = () => {
     }
   }, [announcement, hiddenAnnouncements, setHiddenAnnouncements]);
 
-  const handleCloseAnnouncement = () => {
-    setIsAnnouncementModalOpen(false);
-  };
-
-  const handleConfirmAnnouncement = (hideFor7Days: boolean) => {
+  const handleCloseAnnouncement = (hideFor7Days: boolean) => {
     if (announcement && hideFor7Days) {
       const expires = Date.now() + 7 * 24 * 60 * 60 * 1000;
       setHiddenAnnouncements(prev => ({ ...prev, [announcement.id]: expires }));
@@ -744,7 +740,6 @@ const App: React.FC = () => {
       <AnnouncementModal
         isOpen={isAnnouncementModalOpen}
         onClose={handleCloseAnnouncement}
-        onConfirm={handleConfirmAnnouncement}
         content={announcement?.content || ''}
       />
       <Toast />
