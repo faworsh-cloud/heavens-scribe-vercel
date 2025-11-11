@@ -328,7 +328,7 @@ const BibleMode: React.FC<BibleModeProps> = ({
                     {chapter}장
                   </h3>
                   <div className="space-y-4">
-                    {locations.map(location => (
+                    {locations.map((location: BibleMaterialLocation) => (
                         <div key={location.id}>
                              <h4 className="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">
                                 {formatLocation(location)}

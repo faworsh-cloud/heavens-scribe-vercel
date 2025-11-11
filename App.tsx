@@ -72,26 +72,34 @@ const App: React.FC = () => {
   }, [fontSize]);
 
   // Data State
-  const [keywords, setKeywords] = useLocalStorage<Keyword[]>('sermon-prep-keywords', []);
-  const [bibleData, setBibleData] = useLocalStorage<BibleMaterialLocation[]>('sermon-prep-bible', []);
-  const [sermons, setSermons] = useLocalStorage<Sermon[]>('sermon-prep-sermons', []);
+  const [keywords, _setKeywords] = useLocalStorage<Keyword[]>('sermon-prep-keywords', []);
+  const [bibleData, _setBibleData] = useLocalStorage<BibleMaterialLocation[]>('sermon-prep-bible', []);
+  const [sermons, _setSermons] = useLocalStorage<Sermon[]>('sermon-prep-sermons', []);
   const [lastModified, setLastModified] = useLocalStorage('sermon-prep-last-modified', new Date().toISOString());
   const [lastSavedTimestamp, setLastSavedTimestamp] = useLocalStorage<string | null>('sermon-prep-last-saved-ts', null);
 
-  const isInitialMount = useRef(true);
   const isBulkUpdating = useRef(false);
 
-  // Effect to automatically update lastModified timestamp when data changes from user actions
-  useEffect(() => {
-    if (isInitialMount.current) {
-        isInitialMount.current = false;
-        return;
+  const setKeywords = useCallback((value: React.SetStateAction<Keyword[]>) => {
+    _setKeywords(value);
+    if (!isBulkUpdating.current) {
+      setLastModified(new Date().toISOString());
     }
-    if (isBulkUpdating.current) {
-        return;
+  }, [_setKeywords, setLastModified]);
+
+  const setBibleData = useCallback((value: React.SetStateAction<BibleMaterialLocation[]>) => {
+    _setBibleData(value);
+    if (!isBulkUpdating.current) {
+      setLastModified(new Date().toISOString());
     }
-    setLastModified(new Date().toISOString());
-  }, [keywords, bibleData, sermons]);
+  }, [_setBibleData, setLastModified]);
+
+  const setSermons = useCallback((value: React.SetStateAction<Sermon[]>) => {
+    _setSermons(value);
+    if (!isBulkUpdating.current) {
+      setLastModified(new Date().toISOString());
+    }
+  }, [_setSermons, setLastModified]);
 
 
   // User Auth State
@@ -473,9 +481,9 @@ const App: React.FC = () => {
   const handleRestoreFromImportBackup = () => {
     if (importBackup && window.confirm('마지막 가져오기 작업을 실행 취소하고 데이터를 이전 상태로 복원하시겠습니까?')) {
         isBulkUpdating.current = true;
-        setKeywords(importBackup.keywords);
-        setBibleData(importBackup.bibleData);
-        setSermons(importBackup.sermons);
+        _setKeywords(importBackup.keywords);
+        _setBibleData(importBackup.bibleData);
+        _setSermons(importBackup.sermons);
         setLastModified(importBackup.lastModified);
         setImportBackup(null);
         setToast({ message: '데이터가 이전 버전으로 복원되었습니다.' });
@@ -516,9 +524,9 @@ const App: React.FC = () => {
           setOriginalWorkbook(workbook);
           setOriginalFileName(file.name);
           
-          setKeywords(importedKeywords);
-          setBibleData(importedBibleData);
-          setSermons(importedSermons);
+          _setKeywords(importedKeywords);
+          _setBibleData(importedBibleData);
+          _setSermons(importedSermons);
 
           const now = new Date().toISOString();
           setLastModified(now);
@@ -631,8 +639,8 @@ const App: React.FC = () => {
       } else if (type === 'bible') {
           setMode('bible');
           // FIX: The original cast was unsafe. Adding a type guard to ensure 'item' is a BibleMaterialLocation.
-          // By checking for `materials` we narrow out Sermon, and by checking for `book` we narrow out Keyword.
-          if ('materials' in item && 'book' in item) {
+          // The 'book' property is unique to BibleMaterialLocation in the union type.
+          if ('book' in item) {
             setSelectedBook(item.book);
           }
       } else if (type === 'sermon') {

@@ -159,17 +159,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         </div>
         
         <div className="flex items-center space-x-1 sm:space-x-2">
-            {isDataDirty ? (
-            <button
-                onClick={onUpdate}
-                className="animate-pulse flex items-center gap-2 p-2 sm:px-3 sm:py-2 text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                title="엑셀 파일을 최신 내용으로 업데이트 (Ctrl+S)"
-            >
-                <ArrowUpTrayIcon className="w-5 h-5"/>
-                <span className="hidden sm:inline whitespace-nowrap">파일 업데이트</span>
-                <span className="hidden lg:inline text-xs">(Ctrl+S)</span>
-            </button>
-            ) : !isUpdateExport && (
+            {!isUpdateExport && (
                 <label
                 className="cursor-pointer flex items-center gap-2 p-2 sm:px-3 sm:py-2 text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                 title="시작하려면 엑셀 파일에서 데이터를 가져오세요."
@@ -247,22 +237,32 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                     <SearchIcon className="h-4 w-4 text-gray-400" />
                 </div>
             </form>
-            <nav className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1 rounded-full">
-                <button onClick={() => setMode('keyword')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'keyword' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                키워드
-                </button>
-                <button onClick={() => setMode('bible')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'bible' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                성경
-                </button>
-                <button onClick={() => setMode('sermon')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'sermon' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                설교
-                </button>
-                {hwpConversionEnabled && (
-                    <button onClick={() => setMode('hwp')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'hwp' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                    HWP 변환
+            <div className="flex items-center gap-2">
+                <nav className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1 rounded-full">
+                    <button onClick={() => setMode('keyword')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'keyword' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                    키워드
                     </button>
-                )}
-            </nav>
+                    <button onClick={() => setMode('bible')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'bible' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                    성경
+                    </button>
+                    <button onClick={() => setMode('sermon')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'sermon' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                    설교
+                    </button>
+                    {hwpConversionEnabled && (
+                        <button onClick={() => setMode('hwp')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'hwp' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                        HWP 변환
+                        </button>
+                    )}
+                </nav>
+                <button
+                    onClick={onUpdate}
+                    disabled={!isDataDirty}
+                    className="px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap bg-pink-500 text-white shadow hover:bg-pink-600 disabled:bg-pink-300 dark:disabled:bg-pink-800 disabled:cursor-not-allowed"
+                    title={isDataDirty ? "변경사항 저장 (Ctrl+S)" : "변경사항이 없습니다"}
+                >
+                    저장하기
+                </button>
+            </div>
       </div>
     </header>
   );
