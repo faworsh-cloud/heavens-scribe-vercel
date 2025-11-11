@@ -4,31 +4,34 @@ import { BIBLE_DATA } from './bibleData';
 declare const XLSX: any;
 
 const saveWorkbook = async (wb: any, fileName: string) => {
-    try {
-        if ((window as any).showSaveFilePicker) {
-            const handle = await (window as any).showSaveFilePicker({
-                suggestedName: fileName,
-                types: [{
-                    description: 'Excel Workbook',
-                    accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
-                }],
-            });
-            
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+    // This API might not be available in all contexts (e.g., cross-origin iframes)
+    // or older browsers.
+    if (!(window as any).showSaveFilePicker) {
+        alert("현재 사용 중인 환경에서는 파일 저장 위치를 선택하는 기능을 지원하지 않습니다.\n\nChrome, Edge 등 최신 브라우저를 사용해 주세요. 만약 최신 브라우저를 사용 중이라면, 브라우저의 보안 설정이나 실행 환경(예: 일부 온라인 코드 에디터)으로 인해 기능이 차단되었을 수 있습니다.");
+        return; // Stop execution if the API is not available.
+    }
 
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-        } else {
-            // Fallback for browsers that don't support the API
-            XLSX.writeFile(wb, fileName);
-        }
+    try {
+        const handle = await (window as any).showSaveFilePicker({
+            suggestedName: fileName,
+            types: [{
+                description: 'Excel Workbook',
+                accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
+            }],
+        });
+        
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
     } catch (err: any) {
-        // Handle user cancellation of the save dialog, which throws an AbortError.
+        // User cancellation of the save dialog throws an AbortError.
+        // We don't need to show an alert for this common user action.
         if (err.name !== 'AbortError') {
             console.error("Error saving file:", err);
-            alert("파일을 저장하는 중 오류가 발생했습니다.");
+            alert(`파일을 저장하는 중 오류가 발생했습니다: ${err.message}`);
         }
     }
 };
