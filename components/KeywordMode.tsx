@@ -34,25 +34,18 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   const { newKeywords, oldKeywords } = useMemo(() => {
-    const ONE_DAY_AGO = Date.now() - (24 * 60 * 60 * 1000);
-    
-    const newK: Keyword[] = [];
-    const oldK: Keyword[] = [];
+    if (keywords.length === 0) {
+      return { newKeywords: [], oldKeywords: [] };
+    }
 
-    keywords.forEach(keyword => {
-      if (new Date(keyword.createdAt).getTime() > ONE_DAY_AGO) {
-        newK.push(keyword);
-      } else {
-        oldK.push(keyword);
-      }
-    });
-    
-    // Sort new keywords newest first
-    newK.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    // Sort old keywords alphabetically (Korean)
-    oldK.sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
+    const sortedByDate = [...keywords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    return { newKeywords: newK, oldKeywords: oldK };
+    const mostRecentKeyword = sortedByDate[0];
+    const otherKeywords = sortedByDate.slice(1);
+
+    otherKeywords.sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
+
+    return { newKeywords: [mostRecentKeyword], oldKeywords: otherKeywords };
   }, [keywords]);
 
   const filteredResult = useMemo(() => {

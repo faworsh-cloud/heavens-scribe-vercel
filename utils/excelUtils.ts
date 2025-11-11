@@ -46,7 +46,9 @@ const generateTimedFilename = (originalFilename: string): string => {
 
 // Private sheet creation functions
 const createKeywordsSheet = (keywords: Keyword[]) => {
-    const flattenedData = keywords.flatMap(keyword => 
+    const sortedKeywords = [...keywords].sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
+    
+    const flattenedData = sortedKeywords.flatMap(keyword => 
         (keyword.materials.length > 0 ? keyword.materials : [{bookTitle: '', author: '', publicationInfo: '', pages: '', content: '', contentImage: null}]).map(material => ({
           '키워드': keyword.name,
           '서명': material.bookTitle,
@@ -96,14 +98,15 @@ export const exportAllData = async (keywords: Keyword[], bibleData: BibleMateria
     try {
         const wb = XLSX.utils.book_new();
         
-        const wsKeywords = createKeywordsSheet(keywords);
-        XLSX.utils.book_append_sheet(wb, wsKeywords, "키워드 자료");
+        // Alphabetical order: 설교 자료, 성경 자료, 키워드 자료
+        const wsSermons = createSermonsSheet(sermons);
+        XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
 
         const wsBible = createBibleSheet(bibleData);
         XLSX.utils.book_append_sheet(wb, wsBible, "성경 자료");
 
-        const wsSermons = createSermonsSheet(sermons);
-        XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
+        const wsKeywords = createKeywordsSheet(keywords);
+        XLSX.utils.book_append_sheet(wb, wsKeywords, "키워드 자료");
 
         await saveWorkbook(wb, `heavens_scribe_backup_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch(err) {
@@ -123,10 +126,10 @@ export const updateDataAndExport = async (
         const updatedWb = XLSX.utils.book_new();
         const managedSheetNames = ["키워드 자료", "성경 자료", "설교 자료"];
 
-        // Add updated managed sheets
-        XLSX.utils.book_append_sheet(updatedWb, createKeywordsSheet(keywords), managedSheetNames[0]);
-        XLSX.utils.book_append_sheet(updatedWb, createBibleSheet(bibleData), managedSheetNames[1]);
-        XLSX.utils.book_append_sheet(updatedWb, createSermonsSheet(sermons), managedSheetNames[2]);
+        // Add updated managed sheets in alphabetical order
+        XLSX.utils.book_append_sheet(updatedWb, createSermonsSheet(sermons), "설교 자료");
+        XLSX.utils.book_append_sheet(updatedWb, createBibleSheet(bibleData), "성경 자료");
+        XLSX.utils.book_append_sheet(updatedWb, createKeywordsSheet(keywords), "키워드 자료");
 
         // Add other sheets from original workbook
         originalWorkbook.SheetNames.forEach((sheetName: string) => {
