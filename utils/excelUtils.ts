@@ -348,10 +348,15 @@ export const importAllData = (file: File): Promise<{ workbook: any; keywords: Ke
                         date = jsDate.toISOString().split('T')[0];
                     }
                     
+                    // FIX: Explicitly define types for `type` and `style` to match the Sermon interface,
+                    // resolving a type inference issue where they were being widened to `string`.
+                    const sermonType: 'my' | 'other' = row['구분'] === 'other' ? 'other' : 'my';
+                    const sermonStyle: 'topic' | 'expository' = row['설교 종류'] === 'topic' || row['설교 종류'] === '주제 설교' ? 'topic' : 'expository';
+
                     return {
                         id: crypto.randomUUID(),
-                        type: row['구분'] === 'other' ? 'other' : 'my',
-                        style: row['설교 종류'] === 'topic' || row['설교 종류'] === '주제 설교' ? 'topic' : 'expository',
+                        type: sermonType,
+                        style: sermonStyle,
                         title: row['제목'] || '',
                         preacher: row['설교자'] || '',
                         date,

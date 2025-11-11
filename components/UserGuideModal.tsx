@@ -44,6 +44,13 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
                     <strong>3. 저장하기 (파일 업데이트):</strong> 상단에 빨간색 <code className="text-xs">'저장하기'</code> 버튼을 누르거나 단축키(Ctrl+S)를 사용하면, 현재 앱의 모든 데이터가 담긴 <strong>새로운 엑셀 파일</strong>이 다운로드됩니다.
                     <br/>
                     <strong className="text-red-600">※ 중요: 기존에 불러왔던 파일은 수정되지 않고, 파일 이름에 시간이 기록된 새 파일이 생성됩니다. 이를 통해 버전 관리가 용이합니다.</strong>
+                    <div className="not-prose mt-2 p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg">
+                        <p className="text-xs text-blue-700 dark:text-blue-200 font-sans">
+                            <strong className="font-semibold">💡 파일 저장 위치 팁:</strong>
+                            <br />
+                            파일이 저장되는 위치는 웹 브라우저의 설정에 따라 결정됩니다. 매번 저장 위치를 직접 선택하고 싶다면, 사용하시는 브라우저의 설정에서 "다운로드 전에 각 파일의 저장 위치 확인" 옵션을 활성화하세요.
+                        </p>
+                    </div>
                 </li>
             </ol>
             
