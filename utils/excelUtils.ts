@@ -3,10 +3,25 @@ import { BIBLE_DATA } from './bibleData';
 
 declare const XLSX: any;
 
+const getTimestamp = (): string => {
+    const now = new Date();
+    return `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+};
+
+const saveWorkbook = (wb: any, fileName: string) => {
+    try {
+        // Use XLSX.writeFile as it provides a reliable fallback for all environments,
+        // including cross-origin iframes where showSaveFilePicker is restricted.
+        XLSX.writeFile(wb, fileName);
+    } catch (err: any) {
+        console.error("Error saving file:", err);
+        alert("파일을 저장하는 중 오류가 발생했습니다.");
+    }
+};
+
 // Private helper to generate a timed filename for updates
 const generateTimedFilename = (originalFilename: string): string => {
-    const now = new Date();
-    const timestamp = `_${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+    const timestamp = `_${getTimestamp()}`;
     const parts = originalFilename.split('.');
     const extension = parts.pop();
     if (!extension) return `${originalFilename}${timestamp}`; // Handle files without extension
@@ -136,20 +151,25 @@ const createSermonsSheet = (sermons: Sermon[]) => {
 };
 
 // EXPORT Logic
-export const exportAllData = (keywords: Keyword[], bibleData: BibleMaterialLocation[], sermons: Sermon[]): { workbook: any, fileName: string } => {
-    const wb = XLSX.utils.book_new();
-    
-    const wsKeywords = createKeywordsSheet(keywords);
-    XLSX.utils.book_append_sheet(wb, wsKeywords, "키워드 자료");
+export const exportAllData = (keywords: Keyword[], bibleData: BibleMaterialLocation[], sermons: Sermon[]) => {
+    try {
+        const wb = XLSX.utils.book_new();
+        
+        // Create sheets in the desired order
+        const wsKeywords = createKeywordsSheet(keywords);
+        XLSX.utils.book_append_sheet(wb, wsKeywords, "키워드 자료");
 
-    const wsBible = createBibleSheet(bibleData);
-    XLSX.utils.book_append_sheet(wb, wsBible, "성경 자료");
+        const wsBible = createBibleSheet(bibleData);
+        XLSX.utils.book_append_sheet(wb, wsBible, "성경 자료");
 
-    const wsSermons = createSermonsSheet(sermons);
-    XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
+        const wsSermons = createSermonsSheet(sermons);
+        XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
 
-    const fileName = `heavens_scribe_backup_${new Date().toISOString().split('T')[0]}.xlsx`;
-    return { workbook: wb, fileName };
+        saveWorkbook(wb, `heavens_scribe_backup_${getTimestamp()}.xlsx`);
+    } catch(err) {
+        console.error("Error exporting all data:", err);
+        alert("데이터를 내보내는 중 오류가 발생했습니다.");
+    }
 };
 
 export const updateDataAndExport = (
@@ -158,50 +178,75 @@ export const updateDataAndExport = (
     keywords: Keyword[],
     bibleData: BibleMaterialLocation[],
     sermons: Sermon[]
-): { workbook: any, fileName: string } => {
-    const updatedWb = XLSX.utils.book_new();
-    const managedSheetNames = ["키워드 자료", "성경 자료", "설교 자료"];
+) => {
+    try {
+        const newSheets: { [sheetName: string]: any } = {};
+        
+        // Add updated managed sheets first, in the correct order.
+        newSheets["키워드 자료"] = createKeywordsSheet(keywords);
+        newSheets["성경 자료"] = createBibleSheet(bibleData);
+        newSheets["설교 자료"] = createSermonsSheet(sermons);
+        
+        // Get the new sheet names in the correct order.
+        const newSheetNames = Object.keys(newSheets);
 
-    // Add updated managed sheets in the specified order
-    XLSX.utils.book_append_sheet(updatedWb, createKeywordsSheet(keywords), "키워드 자료");
-    XLSX.utils.book_append_sheet(updatedWb, createBibleSheet(bibleData), "성경 자료");
-    XLSX.utils.book_append_sheet(updatedWb, createSermonsSheet(sermons), "설교 자료");
+        // Add other sheets from the original workbook, avoiding duplicates.
+        originalWorkbook.SheetNames.forEach((sheetName: string) => {
+            if (!newSheetNames.includes(sheetName)) {
+                newSheetNames.push(sheetName);
+                newSheets[sheetName] = originalWorkbook.Sheets[sheetName];
+            }
+        });
 
-    // Add other sheets from original workbook
-    originalWorkbook.SheetNames.forEach((sheetName: string) => {
-        if (!managedSheetNames.includes(sheetName)) {
-            const originalSheet = originalWorkbook.Sheets[sheetName];
-            XLSX.utils.book_append_sheet(updatedWb, originalSheet, sheetName);
-        }
-    });
+        // Create a new workbook object with the correctly ordered sheets.
+        const updatedWb = {
+            Sheets: newSheets,
+            SheetNames: newSheetNames
+        };
 
-    const timedFileName = generateTimedFilename(fileName);
-    return { workbook: updatedWb, fileName: timedFileName };
+        const timedFileName = generateTimedFilename(fileName);
+        saveWorkbook(updatedWb, timedFileName);
+    } catch (err) {
+        console.error("Error updating and exporting data:", err);
+        alert("가져온 파일을 업데이트하는 중 오류가 발생했습니다.");
+    }
 };
 
 
-export const exportSingleKeyword = (keyword: Keyword): { workbook: any, fileName: string } => {
-    const wb = XLSX.utils.book_new();
-    const ws = createKeywordsSheet([keyword]);
-    XLSX.utils.book_append_sheet(wb, ws, keyword.name.substring(0, 31));
-    const fileName = `HS_키워드_${keyword.name}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    return { workbook: wb, fileName };
+export const exportSingleKeyword = (keyword: Keyword) => {
+    try {
+        const wb = XLSX.utils.book_new();
+        const ws = createKeywordsSheet([keyword]);
+        XLSX.utils.book_append_sheet(wb, ws, keyword.name.substring(0, 31));
+        saveWorkbook(wb, `HS_키워드_${keyword.name}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch(err) {
+        console.error("Error exporting keyword:", err);
+        alert("키워드 자료를 내보내는 중 오류가 발생했습니다.");
+    }
 };
 
-export const exportBibleBookData = (bookName: string, bibleData: BibleMaterialLocation[]): { workbook: any, fileName: string } => {
-    const wb = XLSX.utils.book_new();
-    const ws = createBibleSheet(bibleData);
-    XLSX.utils.book_append_sheet(wb, ws, bookName);
-    const fileName = `HS_성경_${bookName}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    return { workbook: wb, fileName };
+export const exportBibleBookData = (bookName: string, bibleData: BibleMaterialLocation[]) => {
+     try {
+        const wb = XLSX.utils.book_new();
+        const ws = createBibleSheet(bibleData);
+        XLSX.utils.book_append_sheet(wb, ws, bookName);
+        saveWorkbook(wb, `HS_성경_${bookName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch(err) {
+        console.error("Error exporting bible data:", err);
+        alert("성경 자료를 내보내는 중 오류가 발생했습니다.");
+    }
 };
 
-export const exportSermonsList = (sermons: Sermon[]): { workbook: any, fileName: string } => {
-    const wb = XLSX.utils.book_new();
-    const ws = createSermonsSheet(sermons);
-    XLSX.utils.book_append_sheet(wb, ws, "설교 목록");
-    const fileName = `HS_설교목록_${new Date().toISOString().split('T')[0]}.xlsx`;
-    return { workbook: wb, fileName };
+export const exportSermonsList = (sermons: Sermon[]) => {
+     try {
+        const wb = XLSX.utils.book_new();
+        const ws = createSermonsSheet(sermons);
+        XLSX.utils.book_append_sheet(wb, ws, "설교 목록");
+        saveWorkbook(wb, `HS_설교목록_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch(err) {
+        console.error("Error exporting sermons:", err);
+        alert("설교 목록을 내보내는 중 오류가 발생했습니다.");
+    }
 };
 
 
@@ -350,21 +395,28 @@ export const importAllData = (file: File): Promise<{workbook: any, keywords: Key
     });
 };
 
-export const downloadTemplate = (): { workbook: any, fileName: string } => {
-    const wb = XLSX.utils.book_new();
-    
-    const kwHeaders = ['키워드', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)'];
-    const wsKeywords = XLSX.utils.aoa_to_sheet([kwHeaders]);
-    XLSX.utils.book_append_sheet(wb, wsKeywords, "키워드 자료");
-    
-    const bibleHeaders = ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)'];
-    const wsBible = XLSX.utils.aoa_to_sheet([bibleHeaders]);
-    XLSX.utils.book_append_sheet(wb, wsBible, "성경 자료");
+export const downloadTemplate = () => {
+    try {
+        const wb = XLSX.utils.book_new();
+        
+        const kwHeaders = ['키워드', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)'];
+        const wsKeywords = XLSX.utils.aoa_to_sheet([kwHeaders]);
+        XLSX.utils.book_append_sheet(wb, wsKeywords, "키워드 자료");
+        
+        const bibleHeaders = ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)'];
+        const wsBible = XLSX.utils.aoa_to_sheet([bibleHeaders]);
+        XLSX.utils.book_append_sheet(wb, wsBible, "성경 자료");
 
-    const sermonHeaders = ['구분', '설교 종류', '제목', '설교자', '날짜', '성경 본문', '내용'];
-    const wsSermons = XLSX.utils.aoa_to_sheet([sermonHeaders]);
-    XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
-    
-    const fileName = 'heavens_scribe_template.xlsx';
-    return { workbook: wb, fileName };
-};
+        const sermonHeaders = ['구분', '설교 종류', '제목', '설교자', '날짜', '성경 본문', '내용'];
+        const wsSermons = XLSX.utils.aoa_to_sheet([sermonHeaders]);
+        XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
+        
+        // Ensure the correct sheet order in the template file.
+        wb.SheetNames = ["키워드 자료", "성경 자료", "설교 자료"];
+
+        saveWorkbook(wb, 'heavens_scribe_template.xlsx');
+    } catch(err) {
+        console.error("Error downloading template:", err);
+        alert("양식을 다운로드하는 중 오류가 발생했습니다.");
+    }
+}

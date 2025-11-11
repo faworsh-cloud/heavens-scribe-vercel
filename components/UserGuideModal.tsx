@@ -41,7 +41,7 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
                     <strong>2. 앱에서 작업하기:</strong> 키워드, 성경, 설교 모드에서 자유롭게 자료를 추가, 수정, 삭제합니다. 모든 변경사항은 브라우저에 임시 저장됩니다.
                 </li>
                 <li>
-                    <strong>3. 저장하기 (파일 업데이트):</strong> 작업 내용이 변경되면 상단에 빨간색 <code className="text-xs">'저장하기'</code> 버튼이 활성화됩니다. 이 버튼을 누르거나 단축키(Ctrl+S)를 사용하면, 현재 앱의 모든 데이터가 담긴 <strong>새로운 엑셀 파일</strong>이 다운로드됩니다.
+                    <strong>3. 저장하기 (파일 업데이트):</strong> 상단에 빨간색 <code className="text-xs">'저장하기'</code> 버튼을 누르거나 단축키(Ctrl+S)를 사용하면, 현재 앱의 모든 데이터가 담긴 <strong>새로운 엑셀 파일</strong>이 다운로드됩니다.
                     <br/>
                     <strong className="text-red-600">※ 중요: 기존에 불러왔던 파일은 수정되지 않고, 파일 이름에 시간이 기록된 새 파일이 생성됩니다. 이를 통해 버전 관리가 용이합니다.</strong>
                 </li>
