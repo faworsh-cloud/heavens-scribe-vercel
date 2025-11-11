@@ -130,6 +130,30 @@ const App: React.FC = () => {
   
   const isDataDirty = isUpdateExport && lastSavedTimestamp !== null && lastModified > lastSavedTimestamp;
 
+  // Handle Escape key to close modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Close the top-most/nested modals first
+        if (isApiGuideOpen) setIsApiGuideOpen(false);
+        else if (isPinModalOpen) setIsPinModalOpen(false);
+        else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
+        else if (isUserGuideModalOpen) setIsUserGuideModalOpen(false);
+        else if (isAnnouncementModalOpen) setIsAnnouncementModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [
+    isApiGuideOpen, setIsApiGuideOpen,
+    isPinModalOpen, setIsPinModalOpen,
+    isSettingsModalOpen, setIsSettingsModalOpen,
+    isUserGuideModalOpen, setIsUserGuideModalOpen,
+    isAnnouncementModalOpen, setIsAnnouncementModalOpen
+  ]);
+
   // Switch to keyword mode if HWP conversion is disabled
   useEffect(() => {
     if (!hwpConversionEnabled && mode === 'hwp') {
@@ -368,12 +392,13 @@ const App: React.FC = () => {
         
         for (const item of importedKeywords) {
           // Add type guards to safely handle potentially malformed data from AI conversion.
-          if (typeof item !== 'object' || item === null || typeof item.keyword !== 'string' || !item.keyword) {
+          if (typeof item !== 'object' || item === null || typeof (item as any).keyword !== 'string' || !(item as any).keyword) {
             continue;
           }
 
           // Handle potentially malformed materials array
-          const newMaterials = (Array.isArray(item.materials) ? item.materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
+          // FIX: The error "Property 'materials' does not exist on type 'unknown'" occurs here because `item` can be of `any` type and strict mode treats property access as unsafe. Casting to `any` makes the access explicit.
+          const newMaterials = (Array.isArray((item as any).materials) ? (item as any).materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
             ...m,
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString()

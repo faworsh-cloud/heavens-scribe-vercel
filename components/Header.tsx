@@ -62,7 +62,24 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
     return () => {
         document.removeEventListener("mousedown", handleClickOutside);
     };
-}, []);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (isFeedbackOpen) setIsFeedbackOpen(false);
+        if (isProfileOpen) setIsProfileOpen(false);
+      }
+    };
+
+    if (isFeedbackOpen || isProfileOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFeedbackOpen, isProfileOpen, setIsFeedbackOpen, setIsProfileOpen]);
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText('faworsh@gmail.com').then(() => {
