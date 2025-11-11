@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.heavens_scribe_vercel.twa",
+    "sha256_cert_fingerprints": [
+      "DE:F9:4C:75:64:A8:D6:7A:97:F3:E3:00:72:3D:F9:94:6F:E4:F8:45:89:33:F3:9D:83:AE:B2:33:D6:9D:C0:26"
+    ]
+  }
+}]
