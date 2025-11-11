@@ -6,7 +6,6 @@ import { SearchIcon, XMarkIcon } from './icons';
 
 interface KeywordModeProps {
   keywords: Keyword[];
-  setKeywords: (keywords: Keyword[]) => void;
   selectedKeyword: Keyword | null;
   selectedKeywordId: string | null;
   onSelectKeyword: (id: string) => void;
@@ -34,25 +33,60 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
-  const filteredKeywords = useMemo(() => {
-    if (!searchTerm) return keywords;
-    return keywords
-      .map(keyword => {
-        const matchingMaterials = keyword.materials.filter(material =>
-          material.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          material.bookTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          material.author.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        if (keyword.name.toLowerCase().includes(searchTerm.toLowerCase()) || matchingMaterials.length > 0) {
-          // If search term matches keyword name, show all its materials. Otherwise, show only matching materials.
-          return { ...keyword, materials: keyword.name.toLowerCase().includes(searchTerm.toLowerCase()) ? keyword.materials : matchingMaterials };
-        }
-        return null;
-      })
-      .filter((keyword): keyword is Keyword => keyword !== null);
-  }, [keywords, searchTerm]);
+  const { newKeywords, oldKeywords } = useMemo(() => {
+    const ONE_DAY_AGO = Date.now() - (24 * 60 * 60 * 1000);
+    
+    const newK: Keyword[] = [];
+    const oldK: Keyword[] = [];
 
-  const displayedKeyword = searchTerm ? filteredKeywords.find(k => k.id === selectedKeywordId) : selectedKeyword;
+    keywords.forEach(keyword => {
+      if (new Date(keyword.createdAt).getTime() > ONE_DAY_AGO) {
+        newK.push(keyword);
+      } else {
+        oldK.push(keyword);
+      }
+    });
+    
+    // Sort new keywords newest first
+    newK.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Sort old keywords alphabetically (Korean)
+    oldK.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+    return { newKeywords: newK, oldKeywords: oldK };
+  }, [keywords]);
+
+  const filteredResult = useMemo(() => {
+    if (!searchTerm) {
+      return { newKeywords, oldKeywords };
+    }
+
+    const filterAndMap = (keyword: Keyword): Keyword | null => {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      const matchingMaterials = keyword.materials.filter(material =>
+        material.content.toLowerCase().includes(lowerSearchTerm) ||
+        material.bookTitle.toLowerCase().includes(lowerSearchTerm) ||
+        material.author.toLowerCase().includes(lowerSearchTerm)
+      );
+      if (keyword.name.toLowerCase().includes(lowerSearchTerm) || matchingMaterials.length > 0) {
+        return { ...keyword, materials: keyword.name.toLowerCase().includes(lowerSearchTerm) ? keyword.materials : matchingMaterials };
+      }
+      return null;
+    };
+    
+    const filteredNew = newKeywords.map(filterAndMap).filter((k): k is Keyword => k !== null);
+    const filteredOld = oldKeywords.map(filterAndMap).filter((k): k is Keyword => k !== null);
+
+    return { newKeywords: filteredNew, oldKeywords: filteredOld };
+  }, [newKeywords, oldKeywords, searchTerm]);
+  
+  const displayedKeyword = useMemo(() => {
+    if (!selectedKeywordId) return null;
+    if (!searchTerm) return selectedKeyword;
+    
+    const allFiltered = [...filteredResult.newKeywords, ...filteredResult.oldKeywords];
+    return allFiltered.find(k => k.id === selectedKeywordId) || null;
+  }, [searchTerm, selectedKeyword, selectedKeywordId, filteredResult]);
+
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -88,7 +122,8 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
         </div>
         <div className="flex-1 overflow-hidden">
           <KeywordList
-              keywords={filteredKeywords}
+              newKeywords={filteredResult.newKeywords}
+              oldKeywords={filteredResult.oldKeywords}
               selectedKeywordId={selectedKeywordId}
               onSelectKeyword={onSelectKeyword}
               onAddKeyword={onAddKeyword}

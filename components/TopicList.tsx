@@ -3,14 +3,15 @@ import { Keyword } from '../types';
 import { PlusIcon, TrashIcon } from './icons';
 
 interface KeywordListProps {
-  keywords: Keyword[];
+  newKeywords: Keyword[];
+  oldKeywords: Keyword[];
   selectedKeywordId: string | null;
   onSelectKeyword: (id: string) => void;
   onAddKeyword: (name: string) => void;
   onDeleteKeyword: (id: string) => void;
 }
 
-const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywordId, onSelectKeyword, onAddKeyword, onDeleteKeyword }) => {
+const KeywordList: React.FC<KeywordListProps> = ({ newKeywords, oldKeywords, selectedKeywordId, onSelectKeyword, onAddKeyword, onDeleteKeyword }) => {
   const [newKeywordName, setNewKeywordName] = useState('');
 
   const handleAddKeyword = (e: React.FormEvent) => {
@@ -20,6 +21,32 @@ const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywordId, 
       setNewKeywordName('');
     }
   };
+
+  const renderKeywordItem = (keyword: Keyword) => (
+    <li key={keyword.id} className="group">
+        <button
+        onClick={() => onSelectKeyword(keyword.id)}
+        className={`w-full text-left px-4 py-2 rounded-md transition-colors text-sm font-medium flex justify-between items-center ${
+            selectedKeywordId === keyword.id
+            ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-200'
+            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+        }`}
+        >
+        <span className="truncate">{keyword.name}</span>
+         <span
+            onClick={(e) => {
+              e.stopPropagation();
+              if (window.confirm(`'${keyword.name}' 키워드와 모든 자료를 삭제하시겠습니까?`)) {
+                onDeleteKeyword(keyword.id);
+              }
+            }}
+            className="ml-2 text-gray-400 group-hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <TrashIcon className="w-4 h-4" />
+          </span>
+        </button>
+    </li>
+  );
 
   return (
     <div className="bg-white dark:bg-gray-800/50 p-4 rounded-lg shadow-md h-full flex flex-col">
@@ -42,31 +69,20 @@ const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywordId, 
       </form>
       <nav className="flex-grow overflow-y-auto pr-2 -mr-2">
         <ul className="space-y-2">
-          {keywords.map(keyword => (
-            <li key={keyword.id} className="group">
-                <button
-                onClick={() => onSelectKeyword(keyword.id)}
-                className={`w-full text-left px-4 py-2 rounded-md transition-colors text-sm font-medium flex justify-between items-center ${
-                    selectedKeywordId === keyword.id
-                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-200'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-                >
-                <span className="truncate">{keyword.name}</span>
-                 <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm(`'${keyword.name}' 키워드와 모든 자료를 삭제하시겠습니까?`)) {
-                        onDeleteKeyword(keyword.id);
-                      }
-                    }}
-                    className="ml-2 text-gray-400 group-hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </span>
-                </button>
-            </li>
-          ))}
+          {newKeywords.length > 0 && (
+            <>
+              <li>
+                <h3 className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">최근 추가</h3>
+              </li>
+              {newKeywords.map(renderKeywordItem)}
+              {oldKeywords.length > 0 && (
+                <li className="py-2">
+                  <hr className="border-gray-200 dark:border-gray-700" />
+                </li>
+              )}
+            </>
+          )}
+          {oldKeywords.map(renderKeywordItem)}
         </ul>
       </nav>
     </div>

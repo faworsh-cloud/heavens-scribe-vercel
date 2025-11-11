@@ -417,13 +417,14 @@ const App: React.FC = () => {
         
         // FIX: Use a more robust type guard to ensure item and its properties have the correct types before use.
         for (const item of importedKeywords) {
+          // FIX: In `handleImportData`, cast `item` to `Record<string, unknown>` to safely access properties when type is `unknown`. This resolves an error where properties on `item` could not be accessed within the type guard.
           if (
             typeof item === 'object' &&
             item !== null &&
             'keyword' in item &&
-            typeof item.keyword === 'string' &&
+            typeof (item as Record<string, unknown>).keyword === 'string' &&
             'materials' in item &&
-            Array.isArray(item.materials)
+            Array.isArray((item as Record<string, unknown>).materials)
           ) {
             const { keyword, materials } = item as ImportedKeyword;
 
@@ -434,12 +435,12 @@ const App: React.FC = () => {
             const newMaterials = materials
               .filter(m => typeof m === 'object' && m !== null) // Ensure materials are objects
               .map((m) => ({
-                bookTitle: m.bookTitle || '',
-                author: m.author || '',
-                publicationInfo: m.publicationInfo || '',
-                pages: m.pages || '',
-                content: m.content || '',
-                contentImage: m.contentImage || null,
+                bookTitle: (m as any).bookTitle || '',
+                author: (m as any).author || '',
+                publicationInfo: (m as any).publicationInfo || '',
+                pages: (m as any).pages || '',
+                content: (m as any).content || '',
+                contentImage: (m as any).contentImage || null,
                 id: crypto.randomUUID(),
                 createdAt: new Date().toISOString()
               }));
