@@ -41,6 +41,13 @@ const SermonItem: React.FC<SermonItemProps> = ({ sermon, onEdit, onDelete }) => 
         <div className="pr-16">
             <h3 className="text-xl font-bold text-gray-800 dark:text-white">{sermon.title}</h3>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400 mt-2">
+                <span className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${
+                    sermon.style === 'topic' 
+                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' 
+                    : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                }`}>
+                    {sermon.style === 'topic' ? '주제 설교' : '본문 설교'}
+                </span>
                 <span>{sermon.preacher}</span>
                 <span className="hidden sm:inline">|</span>
                 <span>{sermon.date}</span>

@@ -117,13 +117,14 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
             const sermonSchema = {
                 type: Type.OBJECT,
                 properties: {
+                    style: { type: Type.STRING, description: "설교의 종류. 'topic' (주제 설교) 또는 'expository' (본문 설교) 중 하나. 텍스트 내용을 바탕으로 판단합니다. 본문 구절을 순서대로 깊이 있게 다루면 'expository', 특정 주제를 중심으로 여러 구절을 인용하면 'topic'입니다." },
                     title: { type: Type.STRING, description: "설교의 제목." },
                     preacher: { type: Type.STRING, description: "설교자 이름." },
                     date: { type: Type.STRING, description: "설교 날짜 (YYYY-MM-DD 형식)." },
                     bibleReference: { type: Type.STRING, description: "설교의 주요 성경 본문 (예: 요한복음 3:16-21)." },
                     content: { type: Type.STRING, description: "설교의 전체 내용. 서론, 본론, 결론을 포함." },
                 },
-                required: ["title", "content"]
+                required: ["style", "title", "content"]
             };
 
             switch(conversionType) {
@@ -180,6 +181,7 @@ ${hwpContent}`;
 
                     **작업 지시:**
                     1.  **설교 정보 추출:** 텍스트에서 다음 메타데이터를 식별하고 추출합니다.
+                        - \`style\`: 설교의 종류를 판단합니다. 본문을 순차적으로 깊이 있게 해설하면 'expository'(본문 설교), 특정 주제를 중심으로 여러 성경 구절을 인용하면 'topic'(주제 설교)으로 설정합니다.
                         - \`title\`: 설교 제목
                         - \`preacher\`: 설교자
                         - \`date\`: 설교 날짜 (YYYY-MM-DD 형식으로 변환 시도)
@@ -187,7 +189,7 @@ ${hwpContent}`;
                     2.  **설교 내용 정리 (content):** 메타데이터를 제외한 나머지 텍스트 전체를 설교 내용으로 정리합니다.
 
                     **규칙:**
-                    - 메타데이터가 명확하지 않을 경우, 비워둘 수 있지만 \`title\`과 \`content\`는 필수입니다.
+                    - 메타데이터가 명확하지 않을 경우, 비워둘 수 있지만 \`style\`, \`title\`, \`content\`는 필수입니다.
                     - 최종 출력은 제공된 JSON 스키마를 완벽하게 준수해야 합니다.
 
                     ---
@@ -300,6 +302,7 @@ ${hwpContent}`;
             } else if (conversionType === 'sermon' && previewData.length > 0) {
                 const sermonData = previewData.map(item => ({
                     '구분': 'my',
+                    '설교 종류': item.style === 'topic' ? '주제 설교' : '본문 설교',
                     '제목': item.title || '',
                     '설교자': item.preacher || '',
                     '날짜': item.date || '',
@@ -452,6 +455,26 @@ ${hwpContent}`;
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                      <input value={sermon.preacher} onChange={e => handlePreviewChange([index, 'preacher'], e.target.value)} placeholder="설교자" className="w-full p-2 bg-transparent rounded focus:bg-gray-100 dark:focus:bg-gray-700 outline-none" />
                                      <input value={sermon.date} type="date" onChange={e => handlePreviewChange([index, 'date'], e.target.value)} placeholder="날짜" className="w-full p-2 bg-transparent rounded focus:bg-gray-100 dark:focus:bg-gray-700 outline-none" />
+                                </div>
+                                 <div className="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
+                                    <button
+                                        type="button"
+                                        onClick={() => handlePreviewChange([index, 'style'], 'expository')}
+                                        className={`flex-1 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+                                            sermon.style === 'expository' ? 'bg-white dark:bg-gray-800 shadow' : ''
+                                        }`}
+                                    >
+                                        본문 설교
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handlePreviewChange([index, 'style'], 'topic')}
+                                        className={`flex-1 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+                                            sermon.style === 'topic' ? 'bg-white dark:bg-gray-800 shadow' : ''
+                                        }`}
+                                    >
+                                        주제 설교
+                                    </button>
                                 </div>
                                  <input value={sermon.bibleReference} onChange={e => handlePreviewChange([index, 'bibleReference'], e.target.value)} placeholder="성경 본문" className="w-full p-2 bg-transparent rounded focus:bg-gray-100 dark:focus:bg-gray-700 outline-none" />
                                 <textarea value={sermon.content} onChange={e => handlePreviewChange([index, 'content'], e.target.value)} placeholder="설교 내용" rows={15} className="w-full p-2 bg-transparent rounded focus:bg-gray-100 dark:focus:bg-gray-700 outline-none" />

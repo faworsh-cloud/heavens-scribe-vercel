@@ -5,7 +5,7 @@ import { XMarkIcon } from './icons';
 interface AddEditSermonModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (sermon: Omit<Sermon, 'id' | 'createdAt'>, id?: string) => void;
+  onSave: (sermon: Omit<Sermon, 'id' | 'createdAt' | 'updatedAt'>, id?: string) => void;
   sermonToEdit?: Sermon | null;
 }
 
@@ -24,6 +24,7 @@ const exampleContent =
 
 const AddEditSermonModal: React.FC<AddEditSermonModalProps> = ({ isOpen, onClose, onSave, sermonToEdit }) => {
   const [type, setType] = useState<'my' | 'other'>('my');
+  const [style, setStyle] = useState<'topic' | 'expository'>('expository');
   const [title, setTitle] = useState('');
   const [preacher, setPreacher] = useState('');
   const [date, setDate] = useState('');
@@ -33,6 +34,7 @@ const AddEditSermonModal: React.FC<AddEditSermonModalProps> = ({ isOpen, onClose
   useEffect(() => {
     if (sermonToEdit) {
       setType(sermonToEdit.type);
+      setStyle(sermonToEdit.style || 'expository');
       setTitle(sermonToEdit.title);
       setPreacher(sermonToEdit.preacher);
       setDate(sermonToEdit.date);
@@ -41,6 +43,7 @@ const AddEditSermonModal: React.FC<AddEditSermonModalProps> = ({ isOpen, onClose
     } else {
       // Reset form with example content
       setType('my');
+      setStyle('expository');
       setTitle('');
       setPreacher('');
       setDate('');
@@ -55,7 +58,7 @@ const AddEditSermonModal: React.FC<AddEditSermonModalProps> = ({ isOpen, onClose
       alert('제목과 설교 내용은 필수 항목입니다.');
       return;
     }
-    onSave({ type, title, preacher, date, bibleReference, content }, sermonToEdit?.id);
+    onSave({ type, style, title, preacher, date, bibleReference, content }, sermonToEdit?.id);
   };
 
   if (!isOpen) return null;
@@ -93,6 +96,34 @@ const AddEditSermonModal: React.FC<AddEditSermonModalProps> = ({ isOpen, onClose
                   }`}
                 >
                   타인 설교
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">설교 종류</label>
+              <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setStyle('expository')}
+                  className={`flex-1 px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+                    style === 'expository'
+                      ? 'bg-white dark:bg-gray-900 text-primary-600 dark:text-primary-300 shadow'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  본문 설교
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStyle('topic')}
+                  className={`flex-1 px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+                    style === 'topic'
+                      ? 'bg-white dark:bg-gray-900 text-primary-600 dark:text-primary-300 shadow'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  주제 설교
                 </button>
               </div>
             </div>

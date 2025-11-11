@@ -32,6 +32,7 @@ export interface BibleMaterialLocation {
 export interface Sermon {
   id: string;
   type: 'my' | 'other';
+  style: 'topic' | 'expository';
   title: string;
   preacher: string;
   date: string;

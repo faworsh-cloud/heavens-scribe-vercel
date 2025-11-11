@@ -155,13 +155,14 @@ const createSermonsSheet = (sermons: Sermon[]) => {
 
     const dataToExport = sortedSermons.map(sermon => ({
         '구분': sermon.type === 'my' ? '개인 설교' : '타인 설교',
+        '설교 종류': sermon.style === 'topic' ? '주제 설교' : '본문 설교',
         '제목': sermon.title,
         '설교자': sermon.preacher,
         '날짜': sermon.date,
         '성경 본문': sermon.bibleReference,
         '내용': sermon.content,
       }));
-      return XLSX.utils.json_to_sheet(dataToExport, {header: ['구분', '제목', '설교자', '날짜', '성경 본문', '내용']});
+      return XLSX.utils.json_to_sheet(dataToExport, {header: ['구분', '설교 종류', '제목', '설교자', '날짜', '성경 본문', '내용']});
 };
 
 // EXPORT Logic
@@ -337,19 +338,22 @@ const importBibleData = (sheet: any[]): BibleMaterialLocation[] => {
 };
 
 const importSermons = (sheet: any[]): Sermon[] => {
-    // FIX: Added missing `updatedAt` property to align with the `Sermon` type definition.
-    return sheet.map(row => ({
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      // FIX: Add type assertion to prevent type widening from 'my'|'other' to string.
-      type: (row['구분'] === '개인 설교' ? 'my' : 'other') as 'my' | 'other',
-      title: row['제목'] || '',
-      preacher: row['설교자'] || '',
-      date: row['날짜'] || '',
-      bibleReference: row['성경 본문'] || '',
-      content: row['내용'] || '',
-    })).filter(s => s.title); // filter out empty rows
+    return sheet.map(row => {
+        // FIX: Explicitly type `style` to match the `Sermon` interface, resolving the type error.
+        const style: 'topic' | 'expository' = row['설교 종류'] === '주제 설교' ? 'topic' : 'expository';
+        return {
+            id: crypto.randomUUID(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            type: (row['구분'] === '개인 설교' ? 'my' : 'other') as 'my' | 'other',
+            style: style,
+            title: row['제목'] || '',
+            preacher: row['설교자'] || '',
+            date: row['날짜'] || '',
+            bibleReference: row['성경 본문'] || '',
+            content: row['내용'] || '',
+        };
+    }).filter(s => s.title);
 };
 
 export const importAllData = (file: File): Promise<{workbook: any, keywords: Keyword[], bibleData: BibleMaterialLocation[], sermons: Sermon[]}> => {
@@ -410,7 +414,7 @@ export const downloadTemplate = async () => {
         const wsBible = XLSX.utils.aoa_to_sheet([bibleHeaders]);
         XLSX.utils.book_append_sheet(wb, wsBible, "성경 자료");
 
-        const sermonHeaders = ['구분', '제목', '설교자', '날짜', '성경 본문', '내용'];
+        const sermonHeaders = ['구분', '설교 종류', '제목', '설교자', '날짜', '성경 본문', '내용'];
         const wsSermons = XLSX.utils.aoa_to_sheet([sermonHeaders]);
         XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
 

@@ -375,7 +375,7 @@ const App: React.FC = () => {
   };
 
   // Sermon Handlers
-  const handleSaveSermon = (sermonData: Omit<Sermon, 'id' | 'createdAt'>, id?: string) => {
+  const handleSaveSermon = (sermonData: Omit<Sermon, 'id' | 'createdAt' | 'updatedAt'>, id?: string) => {
       const now = new Date().toISOString();
       if (sermonToEdit) {
           setSermons(prev => prev.map(s => s.id === sermonToEdit.id ? { ...s, ...sermonData, updatedAt: now } : s));
@@ -431,6 +431,8 @@ const App: React.FC = () => {
             Array.isArray((item as any).materials)
           ) {
             // FIX: The destructuring with a type cast was causing a TypeScript error. Replaced with direct property access for safer type handling.
+            // FIX: Replaced spread destructuring with direct property access to resolve type errors.
+            // The spread operator on an `any` type was causing issues with strict compiler settings.
             const keyword = (item as ImportedKeyword).keyword;
             const materials = (item as ImportedKeyword).materials;
 
@@ -483,7 +485,8 @@ const App: React.FC = () => {
         ...s,
         id: crypto.randomUUID(),
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        style: s.style || 'expository',
       }));
       itemsAddedCount = importedSermons.length;
       setSermons(currentSermons => [...currentSermons, ...importedSermons]);
