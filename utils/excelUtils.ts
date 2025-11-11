@@ -44,16 +44,44 @@ const generateTimedFilename = (originalFilename: string): string => {
     return `${baseName}${timestamp}.${extension}`;
 };
 
-// --- Sorting helper for Bible data ---
-const bibleBookOrder = [
-    ...BIBLE_DATA.oldTestament.map(book => book.name),
-    ...BIBLE_DATA.newTestament.map(book => book.name)
-];
+// --- Sorting helpers for Bible and Sermon data ---
+const allBooks = [...BIBLE_DATA.oldTestament, ...BIBLE_DATA.newTestament];
+const bookOrderMap = new Map<string, number>();
+allBooks.forEach((book, index) => {
+    bookOrderMap.set(book.name, index);
+    bookOrderMap.set(book.abbr, index);
+});
 
 const getBookIndex = (bookName: string): number => {
-    const index = bibleBookOrder.indexOf(bookName);
-    return index === -1 ? Infinity : index;
+    return bookOrderMap.get(bookName) ?? Infinity;
 };
+
+// For Sermon data sheet (parses string reference)
+const allBookNamesForRegex = allBooks
+    .flatMap(b => [b.name, b.abbr])
+    .sort((a, b) => b.length - a.length); // Match longer names first
+
+const bookNameRegexPart = allBookNamesForRegex.join('|');
+// Captures: 1. book name, 2. chapter, 3. starting verse
+const sermonRefRegex = new RegExp(`^(${bookNameRegexPart})\\s*(\\d+)(?:[:장절편]\\s*(\\d+))?.*`);
+
+function parseSermonBibleReference(ref: string): { bookIndex: number, chapter: number, verse: number } {
+    const defaultSort = { bookIndex: 999, chapter: 999, verse: 999 };
+    if (!ref) {
+        return defaultSort;
+    }
+    // Handle multiple references by sorting by the first one
+    const firstRef = ref.trim().split(/[,;]/)[0];
+    const match = firstRef.match(sermonRefRegex);
+    if (!match) {
+        return defaultSort;
+    }
+    const [, bookStr, chapterStr, verseStr] = match;
+    const bookIndex = bookOrderMap.get(bookStr) ?? 999;
+    const chapter = parseInt(chapterStr, 10);
+    const verse = verseStr ? parseInt(verseStr, 10) : 0; // Use 0 for verse if not present
+    return { bookIndex, chapter, verse };
+}
 
 
 // Private sheet creation functions
@@ -112,7 +140,20 @@ const createBibleSheet = (bibleData: BibleMaterialLocation[]) => {
 };
 
 const createSermonsSheet = (sermons: Sermon[]) => {
-    const dataToExport = sermons.map(sermon => ({
+    const sortedSermons = [...sermons].sort((a, b) => {
+        const refA = parseSermonBibleReference(a.bibleReference);
+        const refB = parseSermonBibleReference(b.bibleReference);
+
+        if (refA.bookIndex !== refB.bookIndex) {
+            return refA.bookIndex - refB.bookIndex;
+        }
+        if (refA.chapter !== refB.chapter) {
+            return refA.chapter - refB.chapter;
+        }
+        return refA.verse - refB.verse;
+    });
+
+    const dataToExport = sortedSermons.map(sermon => ({
         '구분': sermon.type === 'my' ? '개인 설교' : '타인 설교',
         '제목': sermon.title,
         '설교자': sermon.preacher,

@@ -416,14 +416,14 @@ const App: React.FC = () => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
         for (const item of importedKeywords) {
-          // FIX: Simplified the type guard for imported keyword data. The previous implementation used complex casting which could lead to type errors.
+          // FIX: The type guard was unsafe for imported data. Using type assertions to safely access properties.
           if (
             typeof item === 'object' &&
             item !== null &&
             'keyword' in item &&
-            typeof item.keyword === 'string' &&
+            typeof (item as any).keyword === 'string' &&
             'materials' in item &&
-            Array.isArray(item.materials)
+            Array.isArray((item as any).materials)
           ) {
             const { keyword, materials } = item as ImportedKeyword;
 
