@@ -512,19 +512,19 @@ const App: React.FC = () => {
   };
 
   // --- Unified Excel Handlers ---
-  const handleUnifiedExport = useCallback(() => {
+  const handleUnifiedExport = useCallback(async () => {
     if (originalWorkbook && originalFileName) {
-      updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
+      await updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
     } else {
-      exportAllData(keywords, bibleData, sermons);
+      await exportAllData(keywords, bibleData, sermons);
     }
     const now = new Date().toISOString();
     setLastModified(now);
     setLastSavedTimestamp(now);
   }, [originalWorkbook, originalFileName, keywords, bibleData, sermons, setLastModified, setLastSavedTimestamp]);
 
-  const handleDownloadTemplateFile = () => {
-    downloadTemplate();
+  const handleDownloadTemplateFile = async () => {
+    await downloadTemplate();
   };
 
   const handleImportAllData = async (event: React.ChangeEvent<HTMLInputElement>) => {
