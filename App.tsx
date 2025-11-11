@@ -19,6 +19,9 @@ import GoogleApiGuideModal from './components/GoogleApiGuideModal';
 import GlobalSearchResults from './components/GlobalSearchResults';
 import UserGuideModal from './components/UserGuideModal';
 import AnnouncementModal from './components/AnnouncementModal';
+import SaveFileModal from './components/SaveFileModal';
+
+declare const XLSX: any;
 
 type AppMode = 'keyword' | 'bible' | 'sermon' | 'search' | 'hwp';
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
@@ -120,6 +123,8 @@ const App: React.FC = () => {
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isApiGuideOpen, setIsApiGuideOpen] = useState(false);
   const [isUserGuideModalOpen, setIsUserGuideModalOpen] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [saveFileData, setSaveFileData] = useState<{ url: string; name: string } | null>(null);
 
   // Edit State
   const [materialToEdit, setMaterialToEdit] = useState<Material | null>(null);
@@ -161,7 +166,8 @@ const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         // Close the top-most/nested modals first
-        if (isApiGuideOpen) setIsApiGuideOpen(false);
+        if (isSaveModalOpen) setIsSaveModalOpen(false);
+        else if (isApiGuideOpen) setIsApiGuideOpen(false);
         else if (isPinModalOpen) setIsPinModalOpen(false);
         else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
         else if (isUserGuideModalOpen) setIsUserGuideModalOpen(false);
@@ -173,11 +179,12 @@ const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
-    isApiGuideOpen, setIsApiGuideOpen,
-    isPinModalOpen, setIsPinModalOpen,
-    isSettingsModalOpen, setIsSettingsModalOpen,
-    isUserGuideModalOpen, setIsUserGuideModalOpen,
-    isAnnouncementModalOpen, setIsAnnouncementModalOpen
+    isSaveModalOpen,
+    isApiGuideOpen,
+    isPinModalOpen,
+    isSettingsModalOpen,
+    isUserGuideModalOpen,
+    isAnnouncementModalOpen
   ]);
 
   // Switch to keyword mode if HWP conversion is disabled
@@ -511,20 +518,36 @@ const App: React.FC = () => {
     }
   };
 
-  // --- Unified Excel Handlers ---
-  const handleUnifiedExport = useCallback(async () => {
-    if (originalWorkbook && originalFileName) {
-      await updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
-    } else {
-      await exportAllData(keywords, bibleData, sermons);
+  const openSaveModal = (workbook: any, fileName: string) => {
+    try {
+        const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        setSaveFileData({ url, name: fileName });
+        setIsSaveModalOpen(true);
+    } catch (err) {
+        console.error("Error creating file blob:", err);
+        alert("파일을 생성하는 중 오류가 발생했습니다.");
     }
+  };
+
+  // --- Unified Excel Handlers ---
+  const handleUnifiedExport = useCallback(() => {
+    let exportResult;
+    if (originalWorkbook && originalFileName) {
+        exportResult = updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
+    } else {
+        exportResult = exportAllData(keywords, bibleData, sermons);
+    }
+    openSaveModal(exportResult.workbook, exportResult.fileName);
     const now = new Date().toISOString();
     setLastModified(now);
     setLastSavedTimestamp(now);
-  }, [originalWorkbook, originalFileName, keywords, bibleData, sermons, setLastModified, setLastSavedTimestamp]);
+}, [originalWorkbook, originalFileName, keywords, bibleData, sermons, setLastModified, setLastSavedTimestamp]);
 
-  const handleDownloadTemplateFile = async () => {
-    await downloadTemplate();
+  const handleDownloadTemplateFile = () => {
+      const { workbook, fileName } = downloadTemplate();
+      openSaveModal(workbook, fileName);
   };
 
   const handleImportAllData = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -836,6 +859,18 @@ const App: React.FC = () => {
         isOpen={isAnnouncementModalOpen}
         onClose={handleCloseAnnouncement}
         content={announcement?.content || ''}
+      />
+       <SaveFileModal
+        isOpen={isSaveModalOpen}
+        onClose={() => {
+          if (saveFileData) {
+            URL.revokeObjectURL(saveFileData.url);
+          }
+          setIsSaveModalOpen(false);
+          setSaveFileData(null);
+        }}
+        fileUrl={saveFileData?.url}
+        fileName={saveFileData?.name}
       />
       <Toast />
     </>
