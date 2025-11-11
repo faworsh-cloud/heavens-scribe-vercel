@@ -421,8 +421,7 @@ const App: React.FC = () => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
         for (const item of importedKeywords) {
-          // FIX: Replaced the unsafe type guard with a safer check for object properties.
-          // This ensures `item` is a valid object with the necessary properties before destructuring.
+          // FIX: Add a type guard to safely handle imported data, preventing errors from malformed entries.
           if (
             item &&
             typeof item === 'object' &&

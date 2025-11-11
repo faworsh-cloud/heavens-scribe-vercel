@@ -27,7 +27,10 @@ const formatCitation = (material: Material) => {
 
 const MaterialItem: React.FC<MaterialItemProps> = ({ material, onEdit, onDelete, hideActions }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border border-gray-200 dark:border-gray-700 relative group">
+    <div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border border-gray-200 dark:border-gray-700 relative group cursor-pointer"
+        onDoubleClick={() => onEdit(material)}
+    >
         {!hideActions && (
           <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button onClick={() => onEdit(material)} className="text-gray-400 hover:text-primary-500 dark:hover:text-primary-400">
