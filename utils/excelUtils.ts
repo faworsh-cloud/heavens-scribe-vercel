@@ -170,6 +170,7 @@ export const exportAllData = async (keywords: Keyword[], bibleData: BibleMateria
     try {
         const wb = XLSX.utils.book_new();
         
+        // Create sheets in the desired order
         const wsKeywords = createKeywordsSheet(keywords);
         XLSX.utils.book_append_sheet(wb, wsKeywords, "키워드 자료");
 
@@ -194,21 +195,29 @@ export const updateDataAndExport = async (
     sermons: Sermon[]
 ) => {
     try {
-        const updatedWb = XLSX.utils.book_new();
-        const managedSheetNames = ["키워드 자료", "성경 자료", "설교 자료"];
+        const newSheets: { [sheetName: string]: any } = {};
+        
+        // Add updated managed sheets first, in the correct order.
+        newSheets["키워드 자료"] = createKeywordsSheet(keywords);
+        newSheets["성경 자료"] = createBibleSheet(bibleData);
+        newSheets["설교 자료"] = createSermonsSheet(sermons);
+        
+        // Get the new sheet names in the correct order.
+        const newSheetNames = Object.keys(newSheets);
 
-        // Add updated managed sheets in the specified order
-        XLSX.utils.book_append_sheet(updatedWb, createKeywordsSheet(keywords), "키워드 자료");
-        XLSX.utils.book_append_sheet(updatedWb, createBibleSheet(bibleData), "성경 자료");
-        XLSX.utils.book_append_sheet(updatedWb, createSermonsSheet(sermons), "설교 자료");
-
-        // Add other sheets from original workbook
+        // Add other sheets from the original workbook, avoiding duplicates.
         originalWorkbook.SheetNames.forEach((sheetName: string) => {
-            if (!managedSheetNames.includes(sheetName)) {
-                const originalSheet = originalWorkbook.Sheets[sheetName];
-                XLSX.utils.book_append_sheet(updatedWb, originalSheet, sheetName);
+            if (!newSheetNames.includes(sheetName)) {
+                newSheetNames.push(sheetName);
+                newSheets[sheetName] = originalWorkbook.Sheets[sheetName];
             }
         });
+
+        // Create a new workbook object with the correctly ordered sheets.
+        const updatedWb = {
+            Sheets: newSheets,
+            SheetNames: newSheetNames
+        };
 
         const timedFileName = generateTimedFilename(fileName);
         await saveWorkbook(updatedWb, timedFileName);
@@ -416,6 +425,9 @@ export const downloadTemplate = async () => {
         const sermonHeaders = ['구분', '설교 종류', '제목', '설교자', '날짜', '성경 본문', '내용'];
         const wsSermons = XLSX.utils.aoa_to_sheet([sermonHeaders]);
         XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
+        
+        // Ensure the correct sheet order in the template file.
+        wb.SheetNames = ["키워드 자료", "성경 자료", "설교 자료"];
 
         await saveWorkbook(wb, 'heavens_scribe_template.xlsx');
     } catch(err) {
