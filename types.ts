@@ -14,6 +14,7 @@ export interface Keyword {
   name: string;
   materials: Material[];
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface BibleMaterialLocation {
@@ -25,6 +26,7 @@ export interface BibleMaterialLocation {
   verseEnd?: number;
   materials: Material[];
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface Sermon {
@@ -36,6 +38,7 @@ export interface Sermon {
   bibleReference: string;
   content: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface UserProfile {

@@ -225,11 +225,16 @@ ${hwpContent}`;
                     };
                     
                     if (locationsMap.has(locationKey)) {
-                        locationsMap.get(locationKey)!.materials.push({ ...material, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+                        // FIX: Added logic to update the `updatedAt` timestamp for existing locations.
+                        const existingLocation = locationsMap.get(locationKey)!;
+                        existingLocation.materials.push({ ...material, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+                        existingLocation.updatedAt = new Date().toISOString();
                     } else {
+                        // FIX: Added missing `updatedAt` property to align with the `BibleMaterialLocation` type definition.
                         locationsMap.set(locationKey, {
                           id: crypto.randomUUID(),
                           createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
                           book: item.book,
                           chapterStart: item.chapterStart,
                           verseStart: item.verseStart,

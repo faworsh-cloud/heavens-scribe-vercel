@@ -274,7 +274,8 @@ const App: React.FC = () => {
 
   // Keyword Handlers
   const handleAddKeyword = (name: string) => {
-    const newKeyword: Keyword = { id: crypto.randomUUID(), name, materials: [], createdAt: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const newKeyword: Keyword = { id: crypto.randomUUID(), name, materials: [], createdAt: now, updatedAt: now };
     setKeywords(prev => [...prev, newKeyword]);
     setSelectedKeywordId(newKeyword.id);
   };
@@ -290,7 +291,7 @@ const App: React.FC = () => {
   const handleDeleteKeywordMaterial = (materialId: string, keywordId: string) => {
     setKeywords(prev => prev.map(kw => {
       if (kw.id === keywordId) {
-        return { ...kw, materials: kw.materials.filter(m => m.id !== materialId) };
+        return { ...kw, materials: kw.materials.filter(m => m.id !== materialId), updatedAt: new Date().toISOString() };
       }
       return kw;
     }));
@@ -302,7 +303,7 @@ const App: React.FC = () => {
         if (loc.id === locationId) {
             const updatedMaterials = loc.materials.filter(m => m.id !== materialId);
             if (updatedMaterials.length === 0) return null;
-            return { ...loc, materials: updatedMaterials };
+            return { ...loc, materials: updatedMaterials, updatedAt: new Date().toISOString() };
         }
         return loc;
     }).filter((loc): loc is BibleMaterialLocation => loc !== null));
@@ -322,7 +323,7 @@ const App: React.FC = () => {
           const updatedMaterials = materialToEdit
             ? kw.materials.map(m => m.id === materialToEdit.id ? { ...m, ...materialData } : m)
             : [...kw.materials, { ...materialData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }];
-          return { ...kw, materials: updatedMaterials };
+          return { ...kw, materials: updatedMaterials, updatedAt: new Date().toISOString() };
         }
         return kw;
       }));
@@ -333,7 +334,8 @@ const App: React.FC = () => {
                 if(loc.id === context.locationId) {
                     return {
                         ...loc,
-                        materials: loc.materials.map(m => m.id === materialToEdit.id ? {...m, ...materialData} : m)
+                        materials: loc.materials.map(m => m.id === materialToEdit.id ? {...m, ...materialData} : m),
+                        updatedAt: new Date().toISOString()
                     }
                 }
                 return loc;
@@ -348,11 +350,13 @@ const App: React.FC = () => {
             );
 
             if (existingLocation) {
-                 setBibleData(prev => prev.map(loc => loc.id === existingLocation.id ? { ...loc, materials: [...loc.materials, newMaterial] } : loc));
+                 setBibleData(prev => prev.map(loc => loc.id === existingLocation.id ? { ...loc, materials: [...loc.materials, newMaterial], updatedAt: new Date().toISOString() } : loc));
             } else {
+                const now = new Date().toISOString();
                 const newLocation: BibleMaterialLocation = {
                     id: crypto.randomUUID(),
-                    createdAt: new Date().toISOString(),
+                    createdAt: now,
+                    updatedAt: now,
                     book: context.book,
                     chapterStart: context.chapterStart,
                     verseStart: context.verseStart,
@@ -372,10 +376,11 @@ const App: React.FC = () => {
 
   // Sermon Handlers
   const handleSaveSermon = (sermonData: Omit<Sermon, 'id' | 'createdAt'>, id?: string) => {
+      const now = new Date().toISOString();
       if (sermonToEdit) {
-          setSermons(prev => prev.map(s => s.id === sermonToEdit.id ? { ...s, ...sermonData } : s));
+          setSermons(prev => prev.map(s => s.id === sermonToEdit.id ? { ...s, ...sermonData, updatedAt: now } : s));
       } else {
-          const newSermon: Sermon = { ...sermonData, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+          const newSermon: Sermon = { ...sermonData, id: crypto.randomUUID(), createdAt: now, updatedAt: now };
           setSermons(prev => [...prev, newSermon]);
       }
       setIsSermonModalOpen(false);
@@ -416,16 +421,13 @@ const App: React.FC = () => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
         for (const item of importedKeywords) {
-          // FIX: The type guard was unsafe for imported data. Using type assertions to safely access properties.
-          // The previous check was prone to errors with strict type settings.
+          // FIX: Simplified the type guard to prevent compiler issues with strict settings.
           // This ensures `item` is a valid object and contains the necessary properties before destructuring.
           if (
+            item &&
             typeof item === 'object' &&
-            item !== null &&
-            'keyword' in item &&
-            typeof (item as { keyword: unknown }).keyword === 'string' &&
-            'materials' in item &&
-            Array.isArray((item as { materials: unknown }).materials)
+            typeof item.keyword === 'string' &&
+            Array.isArray(item.materials)
           ) {
             const { keyword, materials } = item as ImportedKeyword;
 
@@ -445,31 +447,40 @@ const App: React.FC = () => {
                 id: crypto.randomUUID(),
                 createdAt: new Date().toISOString()
               }));
-
+            
+            const now = new Date().toISOString();
             if (keywordsMap.has(keyword)) {
-              const existing = keywordsMap.get(keyword)!;
-              existing.materials.push(...newMaterials);
+                const existing = keywordsMap.get(keyword)!;
+                const updatedKeyword = { ...existing, materials: [...existing.materials, ...newMaterials], updatedAt: now };
+                keywordsMap.set(keyword, updatedKeyword);
             } else {
-              keywordsMap.set(keyword, {
-                id: crypto.randomUUID(),
-                name: keyword,
-                materials: newMaterials,
-                createdAt: new Date().toISOString()
-              });
+                keywordsMap.set(keyword, {
+                    id: crypto.randomUUID(),
+                    name: keyword,
+                    materials: newMaterials,
+                    createdAt: now,
+                    updatedAt: now
+                });
             }
           }
         }
         return Array.from(keywordsMap.values());
       });
     } else if (type === 'bible') {
-       const importedLocations = data as BibleMaterialLocation[];
+       const now = new Date().toISOString();
+       const importedLocations = (data as BibleMaterialLocation[]).map(loc => ({
+           ...loc,
+           updatedAt: now
+       }));
        itemsAddedCount = importedLocations.length;
        setBibleData(currentBibleData => [...currentBibleData, ...importedLocations]);
     } else if (type === 'sermon') {
-      const importedSermons = (data as Omit<Sermon, 'id' | 'createdAt'>[]).map(s => ({
+      const now = new Date().toISOString();
+      const importedSermons = (data as Omit<Sermon, 'id' | 'createdAt' | 'updatedAt'>[]).map(s => ({
         ...s,
         id: crypto.randomUUID(),
-        createdAt: new Date().toISOString()
+        createdAt: now,
+        updatedAt: now
       }));
       itemsAddedCount = importedSermons.length;
       setSermons(currentSermons => [...currentSermons, ...importedSermons]);

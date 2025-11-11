@@ -72,7 +72,7 @@ const KeywordList: React.FC<KeywordListProps> = ({ newKeywords, oldKeywords, sel
           {newKeywords.length > 0 && (
             <>
               <li>
-                <h3 className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">최근 추가</h3>
+                <h3 className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">최근 작업</h3>
               </li>
               {newKeywords.map(renderKeywordItem)}
               {oldKeywords.length > 0 && (

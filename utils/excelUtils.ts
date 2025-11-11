@@ -281,11 +281,13 @@ const importKeywords = (sheet: any[]): Keyword[] => {
         createdAt: new Date().toISOString()
       });
     });
+    // FIX: Added missing `updatedAt` property to align with the `Keyword` type definition.
     return Array.from(keywordsMap.entries()).map(([name, materials]) => ({
       id: crypto.randomUUID(),
       name,
       materials,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }));
 };
 
@@ -312,11 +314,16 @@ const importBibleData = (sheet: any[]): BibleMaterialLocation[] => {
         };
 
         if (locationsMap.has(locationKey)) {
-            locationsMap.get(locationKey)!.materials.push(material);
+            // FIX: Added logic to update the `updatedAt` timestamp for existing locations.
+            const existingLocation = locationsMap.get(locationKey)!;
+            existingLocation.materials.push(material);
+            existingLocation.updatedAt = new Date().toISOString();
         } else {
+            // FIX: Added missing `updatedAt` property to align with the `BibleMaterialLocation` type definition.
             locationsMap.set(locationKey, {
                 id: crypto.randomUUID(),
                 createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
                 book: book,
                 chapterStart: cs,
                 verseStart: row['시작 절'] ? Number(row['시작 절']) : undefined,
@@ -330,9 +337,11 @@ const importBibleData = (sheet: any[]): BibleMaterialLocation[] => {
 };
 
 const importSermons = (sheet: any[]): Sermon[] => {
+    // FIX: Added missing `updatedAt` property to align with the `Sermon` type definition.
     return sheet.map(row => ({
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       // FIX: Add type assertion to prevent type widening from 'my'|'other' to string.
       type: (row['구분'] === '개인 설교' ? 'my' : 'other') as 'my' | 'other',
       title: row['제목'] || '',

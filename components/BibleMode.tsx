@@ -43,6 +43,7 @@ const BibleMode: React.FC<BibleModeProps> = ({
   selectedBook,
   onSelectBook,
   materialsForBook,
+  bibleData,
   onAddMaterial,
   onEditMaterial,
   onDeleteMaterial,
@@ -55,6 +56,15 @@ const BibleMode: React.FC<BibleModeProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const oldTestamentRef = useRef<HTMLDivElement>(null);
   const newTestamentRef = useRef<HTMLDivElement>(null);
+
+  const mostRecentLocation = useMemo(() => {
+    if (bibleData.length === 0) return null;
+    return [...bibleData].sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+        return dateB - dateA;
+    })[0];
+  }, [bibleData]);
 
   const handleBookClick = (bookName: string) => {
     onSelectBook(bookName);
@@ -212,6 +222,23 @@ const BibleMode: React.FC<BibleModeProps> = ({
             </div>
             <nav className="flex-grow overflow-y-auto pr-2 -mr-2">
             <ul className="space-y-1">
+                {mostRecentLocation && (
+                  <>
+                    <li>
+                      <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-2 uppercase tracking-wider">최근 작업</h3>
+                    </li>
+                    <li className="group">
+                      <button
+                        onClick={() => { onSelectBook(mostRecentLocation.book); setIsSidebarOpen(false); }}
+                        className={`w-full text-left px-3 py-2 rounded-md transition-colors ${selectedBook === mostRecentLocation.book ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-200' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                      >
+                        <span className="font-semibold text-sm truncate">{mostRecentLocation.book}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 block truncate">{formatLocation(mostRecentLocation)}</span>
+                      </button>
+                    </li>
+                    <li className="py-2"><div className="border-t border-dotted border-gray-300 dark:border-gray-600" /></li>
+                  </>
+                )}
                 <div ref={oldTestamentRef}>
                   <h3 className="text-xl font-bold text-blue-800 dark:text-blue-300 px-3 py-2">구약</h3>
                   {BIBLE_DATA.oldTestament.map(book => (

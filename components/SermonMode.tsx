@@ -67,6 +67,15 @@ const SermonMode: React.FC<SermonModeProps> = ({
   const oldTestamentRef = useRef<HTMLDivElement>(null);
   const newTestamentRef = useRef<HTMLDivElement>(null);
 
+  const mostRecentSermon = useMemo(() => {
+    if (sermons.length === 0) return null;
+    return [...sermons].sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+        return dateB - dateA;
+    })[0];
+  }, [sermons]);
+
   // Handle navigation from global search
   useEffect(() => {
     if (initialSelectedSermonId) {
@@ -223,6 +232,29 @@ const SermonMode: React.FC<SermonModeProps> = ({
             </div>
             <nav className="flex-grow overflow-y-auto pr-2 -mr-2">
                 <ul className="space-y-1">
+                    {mostRecentSermon && (
+                        <>
+                            <li>
+                                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-2 uppercase tracking-wider">최근 작업</h3>
+                            </li>
+                            <li>
+                                <button
+                                    onClick={() => {
+                                        const parsedRef = parseSermonBibleReference(mostRecentSermon.bibleReference);
+                                        if (parsedRef.book) {
+                                            handleBookClick(parsedRef.book);
+                                            setTimeout(() => setScrollToSermonId(mostRecentSermon.id), 0);
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 rounded-md transition-colors text-left text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
+                                    <span className="font-semibold text-sm truncate">{mostRecentSermon.title}</span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 block truncate">{mostRecentSermon.bibleReference}</span>
+                                </button>
+                            </li>
+                            <li className="py-2"><div className="border-t border-dotted border-gray-300 dark:border-gray-600" /></li>
+                        </>
+                    )}
                     <div ref={oldTestamentRef}>
                         <h3 className="text-xl font-bold text-blue-800 dark:text-blue-300 px-3 py-2">구약</h3>
                         {BIBLE_DATA.oldTestament.map(book => (

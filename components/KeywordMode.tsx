@@ -38,7 +38,11 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
       return { newKeywords: [], oldKeywords: [] };
     }
 
-    const sortedByDate = [...keywords].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const sortedByDate = [...keywords].sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+      const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+      return dateB - dateA;
+    });
 
     const mostRecentKeyword = sortedByDate[0];
     const otherKeywords = sortedByDate.slice(1);
