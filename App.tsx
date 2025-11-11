@@ -72,30 +72,26 @@ const App: React.FC = () => {
   }, [fontSize]);
 
   // Data State
-  const [keywords, _setKeywords] = useLocalStorage<Keyword[]>('sermon-prep-keywords', []);
-  const [bibleData, _setBibleData] = useLocalStorage<BibleMaterialLocation[]>('sermon-prep-bible', []);
-  const [sermons, _setSermons] = useLocalStorage<Sermon[]>('sermon-prep-sermons', []);
+  const [keywords, setKeywords] = useLocalStorage<Keyword[]>('sermon-prep-keywords', []);
+  const [bibleData, setBibleData] = useLocalStorage<BibleMaterialLocation[]>('sermon-prep-bible', []);
+  const [sermons, setSermons] = useLocalStorage<Sermon[]>('sermon-prep-sermons', []);
   const [lastModified, setLastModified] = useLocalStorage('sermon-prep-last-modified', new Date().toISOString());
   const [lastSavedTimestamp, setLastSavedTimestamp] = useLocalStorage<string | null>('sermon-prep-last-saved-ts', null);
 
-  const updateLastModified = useCallback(() => {
+  const isInitialMount = useRef(true);
+  const isBulkUpdating = useRef(false);
+
+  // Effect to automatically update lastModified timestamp when data changes from user actions
+  useEffect(() => {
+    if (isInitialMount.current) {
+        isInitialMount.current = false;
+        return;
+    }
+    if (isBulkUpdating.current) {
+        return;
+    }
     setLastModified(new Date().toISOString());
-  }, [setLastModified]);
-
-  const setKeywords = useCallback((value: React.SetStateAction<Keyword[]>) => {
-      _setKeywords(value);
-      updateLastModified();
-  }, [_setKeywords, updateLastModified]);
-
-  const setBibleData = useCallback((value: React.SetStateAction<BibleMaterialLocation[]>) => {
-      _setBibleData(value);
-      updateLastModified();
-  }, [_setBibleData, updateLastModified]);
-
-  const setSermons = useCallback((value: React.SetStateAction<Sermon[]>) => {
-      _setSermons(value);
-      updateLastModified();
-  }, [_setSermons, updateLastModified]);
+  }, [keywords, bibleData, sermons]);
 
 
   // User Auth State
@@ -192,12 +188,11 @@ const App: React.FC = () => {
     }
   }, [toast]);
   
-  // Data update effect
+  // Data update effect for cross-tab synchronization
   useEffect(() => {
-    const updateTimestamp = () => setLastModified(new Date().toISOString());
     const handleStorageChange = (e: StorageEvent) => {
         if (['sermon-prep-keywords', 'sermon-prep-bible', 'sermon-prep-sermons'].includes(e.key || '')) {
-            updateTimestamp();
+            setLastModified(new Date().toISOString());
         }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -477,6 +472,7 @@ const App: React.FC = () => {
   
   const handleRestoreFromImportBackup = () => {
     if (importBackup && window.confirm('마지막 가져오기 작업을 실행 취소하고 데이터를 이전 상태로 복원하시겠습니까?')) {
+        isBulkUpdating.current = true;
         setKeywords(importBackup.keywords);
         setBibleData(importBackup.bibleData);
         setSermons(importBackup.sermons);
@@ -484,6 +480,7 @@ const App: React.FC = () => {
         setImportBackup(null);
         setToast({ message: '데이터가 이전 버전으로 복원되었습니다.' });
         setIsSettingsModalOpen(false);
+        setTimeout(() => { isBulkUpdating.current = false; }, 100);
     }
   };
 
@@ -513,6 +510,7 @@ const App: React.FC = () => {
       }
 
       try {
+          isBulkUpdating.current = true;
           const { workbook, keywords: importedKeywords, bibleData: importedBibleData, sermons: importedSermons } = await importAllData(file);
           
           setOriginalWorkbook(workbook);
@@ -532,6 +530,7 @@ const App: React.FC = () => {
           alert(error.message || "데이터를 가져오는 중 오류가 발생했습니다.");
       } finally {
           if (event.target) event.target.value = ''; // Reset file input
+          setTimeout(() => { isBulkUpdating.current = false; }, 100);
       }
   };
   
@@ -632,7 +631,8 @@ const App: React.FC = () => {
       } else if (type === 'bible') {
           setMode('bible');
           // FIX: The original cast was unsafe. Adding a type guard to ensure 'item' is a BibleMaterialLocation.
-          if ('book' in item) {
+          // By checking for `materials` we narrow out Sermon, and by checking for `book` we narrow out Keyword.
+          if ('materials' in item && 'book' in item) {
             setSelectedBook(item.book);
           }
       } else if (type === 'sermon') {
