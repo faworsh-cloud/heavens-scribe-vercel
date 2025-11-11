@@ -410,7 +410,7 @@ const App: React.FC = () => {
 
     if (type === 'keyword') {
       type ImportedKeyword = { keyword: string; materials: Omit<Material, 'id' | 'createdAt'>[] };
-      const importedKeywords = data as ImportedKeyword[];
+      const importedKeywords = data;
       itemsAddedCount = importedKeywords.length;
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
@@ -425,7 +425,7 @@ const App: React.FC = () => {
             'materials' in item &&
             Array.isArray(item.materials)
           ) {
-            const { keyword, materials } = item;
+            const { keyword, materials } = item as ImportedKeyword;
 
             if (!keyword) {
               continue;
@@ -433,7 +433,7 @@ const App: React.FC = () => {
 
             const newMaterials = materials
               .filter(m => typeof m === 'object' && m !== null) // Ensure materials are objects
-              .map((m: any) => ({
+              .map((m) => ({
                 bookTitle: m.bookTitle || '',
                 author: m.author || '',
                 publicationInfo: m.publicationInfo || '',
@@ -547,16 +547,14 @@ const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
-            if (isDataDirty) {
-                handleUnifiedExport();
-            }
+            handleUnifiedExport();
         }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
         window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isDataDirty, handleUnifiedExport]);
+  }, [handleUnifiedExport]);
 
 
 
