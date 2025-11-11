@@ -77,7 +77,7 @@ const KeywordList: React.FC<KeywordListProps> = ({ newKeywords, oldKeywords, sel
               {newKeywords.map(renderKeywordItem)}
               {oldKeywords.length > 0 && (
                 <li className="py-2">
-                  <hr className="border-gray-200 dark:border-gray-700" />
+                  <div className="border-t border-dotted border-gray-300 dark:border-gray-600" />
                 </li>
               )}
             </>

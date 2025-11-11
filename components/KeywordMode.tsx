@@ -50,7 +50,7 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
     // Sort new keywords newest first
     newK.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     // Sort old keywords alphabetically (Korean)
-    oldK.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    oldK.sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
 
     return { newKeywords: newK, oldKeywords: oldK };
   }, [keywords]);

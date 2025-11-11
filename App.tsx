@@ -418,13 +418,14 @@ const App: React.FC = () => {
         // FIX: Use a more robust type guard to ensure item and its properties have the correct types before use.
         for (const item of importedKeywords) {
           // FIX: In `handleImportData`, cast `item` to `Record<string, unknown>` to safely access properties when type is `unknown`. This resolves an error where properties on `item` could not be accessed within the type guard.
+          // FIX: The original type assertion using `Record<string, unknown>` was causing a type error. Casting to `any` is a pragmatic way to resolve this specific issue within the type guard.
           if (
             typeof item === 'object' &&
             item !== null &&
             'keyword' in item &&
             typeof (item as Record<string, unknown>).keyword === 'string' &&
             'materials' in item &&
-            Array.isArray((item as Record<string, unknown>).materials)
+            Array.isArray((item as any).materials)
           ) {
             const { keyword, materials } = item as ImportedKeyword;
 
