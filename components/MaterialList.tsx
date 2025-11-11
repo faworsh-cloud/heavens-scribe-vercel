@@ -15,9 +15,9 @@ const MaterialList: React.FC<MaterialListProps> = ({ selectedKeyword, onAddMater
     return (
       <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800/50 rounded-lg shadow-md p-8">
         <KeyIcon className="w-16 h-16 mb-4 text-gray-400" />
-        <h2 className="text-xl font-semibold">키워드를 선택하세요</h2>
-        <p>왼쪽 목록에서 키워드를 선택하여 자료를 보거나 새 키워드를 추가하여 시작하세요.</p>
-        <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">예를 들어 '사랑', '희락', '화평', '오래참음' 등의 키워드가 있습니다.</p>
+        <h2 className="text-xl font-semibold">키워드(단어)를 선택하세요</h2>
+        <p>왼쪽 목록에서 키워드를 선택하여 자료를 보거나 새 키워드 단어를 추가하여 시작하세요.</p>
+        <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">예를 들어 '사랑', '희락', '화평', '오래참음' 등의 키워드 단어가 있습니다.</p>
       </div>
     );
   }

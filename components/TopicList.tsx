@@ -23,7 +23,7 @@ const KeywordList: React.FC<KeywordListProps> = ({ keywords, selectedKeywordId, 
 
   return (
     <div className="bg-white dark:bg-gray-800/50 p-4 rounded-lg shadow-md h-full flex flex-col">
-      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">키워드</h2>
+      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">키워드(단어)</h2>
       <form onSubmit={handleAddKeyword} className="flex mb-4">
         <input
           type="text"

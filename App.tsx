@@ -392,45 +392,45 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
-        // The `item` in the for...of loop can be inferred as `unknown` in strict mode, so we need type guards.
         for (const item of importedKeywords) {
-          // Add type guards to safely handle potentially malformed data from AI conversion.
-          if (typeof item !== 'object' || item === null || !('keyword' in item) || !('materials' in item)) {
-            continue;
-          }
+          // FIX: Refactored to use a positive type guard to improve type inference and avoid errors on 'unknown' types.
+          if (
+            typeof item === 'object' &&
+            item !== null &&
+            'keyword' in item &&
+            'materials' in item
+          ) {
+            // FIX: Removed unnecessary type assertion. The type guard above is sufficient.
+            const { keyword, materials } = item;
 
-          // After the type guards, we can safely access the properties.
-          // TypeScript infers their types as `unknown`, which is handled below.
-          // FIX: Explicitly cast `item` to handle cases where TypeScript doesn't correctly narrow the type after the guards.
-          const { keyword, materials } = item as { keyword: unknown; materials: unknown };
+            if (typeof keyword !== 'string' || !keyword) {
+              continue;
+            }
 
-          if (typeof keyword !== 'string' || !keyword) {
-            continue;
-          }
+            const newMaterials = (Array.isArray(materials) ? materials : [])
+              .filter(m => typeof m === 'object' && m !== null) // Ensure materials are objects
+              .map((m: any) => ({
+                bookTitle: m.bookTitle || '',
+                author: m.author || '',
+                publicationInfo: m.publicationInfo || '',
+                pages: m.pages || '',
+                content: m.content || '',
+                contentImage: m.contentImage || null,
+                id: crypto.randomUUID(),
+                createdAt: new Date().toISOString()
+              }));
 
-          const newMaterials = (Array.isArray(materials) ? materials : [])
-            .filter(m => typeof m === 'object' && m !== null) // Ensure materials are objects
-            .map((m: any) => ({
-              bookTitle: m.bookTitle || '',
-              author: m.author || '',
-              publicationInfo: m.publicationInfo || '',
-              pages: m.pages || '',
-              content: m.content || '',
-              contentImage: m.contentImage || null,
-              id: crypto.randomUUID(),
-              createdAt: new Date().toISOString()
-            }));
-
-          if (keywordsMap.has(keyword)) {
-            const existing = keywordsMap.get(keyword)!;
-            existing.materials.push(...newMaterials);
-          } else {
-            keywordsMap.set(keyword, {
-              id: crypto.randomUUID(),
-              name: keyword,
-              materials: newMaterials,
-              createdAt: new Date().toISOString()
-            });
+            if (keywordsMap.has(keyword)) {
+              const existing = keywordsMap.get(keyword)!;
+              existing.materials.push(...newMaterials);
+            } else {
+              keywordsMap.set(keyword, {
+                id: crypto.randomUUID(),
+                name: keyword,
+                materials: newMaterials,
+                createdAt: new Date().toISOString()
+              });
+            }
           }
         }
         return Array.from(keywordsMap.values());
