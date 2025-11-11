@@ -3,40 +3,25 @@ import { BIBLE_DATA } from './bibleData';
 
 declare const XLSX: any;
 
-const saveWorkbook = async (wb: any, fileName: string) => {
-    try {
-        if ((window as any).showSaveFilePicker) {
-            const handle = await (window as any).showSaveFilePicker({
-                suggestedName: fileName,
-                types: [{
-                    description: 'Excel Workbook',
-                    accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
-                }],
-            });
-            
-            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+const getTimestamp = (): string => {
+    const now = new Date();
+    return `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+};
 
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-        } else {
-            // Fallback for browsers that don't support the API
-            XLSX.writeFile(wb, fileName);
-        }
+const saveWorkbook = (wb: any, fileName: string) => {
+    try {
+        // Use XLSX.writeFile as it provides a reliable fallback for all environments,
+        // including cross-origin iframes where showSaveFilePicker is restricted.
+        XLSX.writeFile(wb, fileName);
     } catch (err: any) {
-        // Handle user cancellation of the save dialog, which throws an AbortError.
-        if (err.name !== 'AbortError') {
-            console.error("Error saving file:", err);
-            alert("파일을 저장하는 중 오류가 발생했습니다.");
-        }
+        console.error("Error saving file:", err);
+        alert("파일을 저장하는 중 오류가 발생했습니다.");
     }
 };
 
 // Private helper to generate a timed filename for updates
 const generateTimedFilename = (originalFilename: string): string => {
-    const now = new Date();
-    const timestamp = `_${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+    const timestamp = `_${getTimestamp()}`;
     const parts = originalFilename.split('.');
     const extension = parts.pop();
     if (!extension) return `${originalFilename}${timestamp}`; // Handle files without extension
@@ -166,7 +151,7 @@ const createSermonsSheet = (sermons: Sermon[]) => {
 };
 
 // EXPORT Logic
-export const exportAllData = async (keywords: Keyword[], bibleData: BibleMaterialLocation[], sermons: Sermon[]) => {
+export const exportAllData = (keywords: Keyword[], bibleData: BibleMaterialLocation[], sermons: Sermon[]) => {
     try {
         const wb = XLSX.utils.book_new();
         
@@ -180,14 +165,14 @@ export const exportAllData = async (keywords: Keyword[], bibleData: BibleMateria
         const wsSermons = createSermonsSheet(sermons);
         XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
 
-        await saveWorkbook(wb, `heavens_scribe_backup_${new Date().toISOString().split('T')[0]}.xlsx`);
+        saveWorkbook(wb, `heavens_scribe_backup_${getTimestamp()}.xlsx`);
     } catch(err) {
         console.error("Error exporting all data:", err);
         alert("데이터를 내보내는 중 오류가 발생했습니다.");
     }
 };
 
-export const updateDataAndExport = async (
+export const updateDataAndExport = (
     originalWorkbook: any,
     fileName: string,
     keywords: Keyword[],
@@ -220,7 +205,7 @@ export const updateDataAndExport = async (
         };
 
         const timedFileName = generateTimedFilename(fileName);
-        await saveWorkbook(updatedWb, timedFileName);
+        saveWorkbook(updatedWb, timedFileName);
     } catch (err) {
         console.error("Error updating and exporting data:", err);
         alert("가져온 파일을 업데이트하는 중 오류가 발생했습니다.");
@@ -228,36 +213,36 @@ export const updateDataAndExport = async (
 };
 
 
-export const exportSingleKeyword = async (keyword: Keyword) => {
+export const exportSingleKeyword = (keyword: Keyword) => {
     try {
         const wb = XLSX.utils.book_new();
         const ws = createKeywordsSheet([keyword]);
         XLSX.utils.book_append_sheet(wb, ws, keyword.name.substring(0, 31));
-        await saveWorkbook(wb, `HS_키워드_${keyword.name}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        saveWorkbook(wb, `HS_키워드_${keyword.name}_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch(err) {
         console.error("Error exporting keyword:", err);
         alert("키워드 자료를 내보내는 중 오류가 발생했습니다.");
     }
 };
 
-export const exportBibleBookData = async (bookName: string, bibleData: BibleMaterialLocation[]) => {
+export const exportBibleBookData = (bookName: string, bibleData: BibleMaterialLocation[]) => {
      try {
         const wb = XLSX.utils.book_new();
         const ws = createBibleSheet(bibleData);
         XLSX.utils.book_append_sheet(wb, ws, bookName);
-        await saveWorkbook(wb, `HS_성경_${bookName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        saveWorkbook(wb, `HS_성경_${bookName}_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch(err) {
         console.error("Error exporting bible data:", err);
         alert("성경 자료를 내보내는 중 오류가 발생했습니다.");
     }
 };
 
-export const exportSermonsList = async (sermons: Sermon[]) => {
+export const exportSermonsList = (sermons: Sermon[]) => {
      try {
         const wb = XLSX.utils.book_new();
         const ws = createSermonsSheet(sermons);
         XLSX.utils.book_append_sheet(wb, ws, "설교 목록");
-        await saveWorkbook(wb, `HS_설교목록_${new Date().toISOString().split('T')[0]}.xlsx`);
+        saveWorkbook(wb, `HS_설교목록_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch(err) {
         console.error("Error exporting sermons:", err);
         alert("설교 목록을 내보내는 중 오류가 발생했습니다.");
@@ -410,7 +395,7 @@ export const importAllData = (file: File): Promise<{workbook: any, keywords: Key
     });
 };
 
-export const downloadTemplate = async () => {
+export const downloadTemplate = () => {
     try {
         const wb = XLSX.utils.book_new();
         
@@ -429,7 +414,7 @@ export const downloadTemplate = async () => {
         // Ensure the correct sheet order in the template file.
         wb.SheetNames = ["키워드 자료", "성경 자료", "설교 자료"];
 
-        await saveWorkbook(wb, 'heavens_scribe_template.xlsx');
+        saveWorkbook(wb, 'heavens_scribe_template.xlsx');
     } catch(err) {
         console.error("Error downloading template:", err);
         alert("양식을 다운로드하는 중 오류가 발생했습니다.");
