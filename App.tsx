@@ -402,8 +402,7 @@ const App: React.FC = () => {
           // After the type guards, we can safely access the properties.
           // TypeScript infers their types as `unknown`, which is handled below.
           // FIX: Explicitly cast `item` to handle cases where TypeScript doesn't correctly narrow the type after the guards.
-          const keyword = (item as any).keyword;
-          const materials = (item as any).materials;
+          const { keyword, materials } = item as { keyword: unknown; materials: unknown };
 
           if (typeof keyword !== 'string' || !keyword) {
             continue;

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sermon } from '../types';
-import { PlusIcon, SearchIcon, PencilIcon, TrashIcon, SpeakerWaveIcon, XMarkIcon } from './icons';
+import { PlusIcon, SearchIcon, PencilIcon, TrashIcon, MicrophoneIcon, XMarkIcon } from './icons';
 
 interface SermonModeProps {
   sermons: Sermon[];
@@ -180,7 +180,7 @@ const SermonMode: React.FC<SermonModeProps> = ({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800/50 rounded-lg shadow-md p-8">
-            <SpeakerWaveIcon className="w-16 h-16 mb-4 text-gray-400" />
+            <MicrophoneIcon className="w-16 h-16 mb-4 text-gray-400" />
             <h2 className="text-xl font-semibold">설교를 선택하세요</h2>
             <p>왼쪽 목록에서 설교를 선택하여 내용을 보거나 새 설교를 추가하세요.</p>
           </div>
