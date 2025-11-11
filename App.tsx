@@ -415,16 +415,15 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
-        // FIX: Use a more robust type guard to ensure item and its properties have the correct types before use.
         for (const item of importedKeywords) {
-          // FIX: In `handleImportData`, we use type guards to safely access properties on `item` which may be of an unknown structure.
+          // FIX: Simplified the type guard for imported keyword data. The previous implementation used complex casting which could lead to type errors.
           if (
             typeof item === 'object' &&
             item !== null &&
             'keyword' in item &&
-            typeof (item as Record<string, unknown>).keyword === 'string' &&
+            typeof item.keyword === 'string' &&
             'materials' in item &&
-            Array.isArray((item as Record<string, unknown>).materials)
+            Array.isArray(item.materials)
           ) {
             const { keyword, materials } = item as ImportedKeyword;
 

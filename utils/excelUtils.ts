@@ -1,4 +1,5 @@
 import { Keyword, BibleMaterialLocation, Sermon, Material } from '../types';
+import { BIBLE_DATA } from './bibleData';
 
 declare const XLSX: any;
 
@@ -43,6 +44,17 @@ const generateTimedFilename = (originalFilename: string): string => {
     return `${baseName}${timestamp}.${extension}`;
 };
 
+// --- Sorting helper for Bible data ---
+const bibleBookOrder = [
+    ...BIBLE_DATA.oldTestament.map(book => book.name),
+    ...BIBLE_DATA.newTestament.map(book => book.name)
+];
+
+const getBookIndex = (bookName: string): number => {
+    const index = bibleBookOrder.indexOf(bookName);
+    return index === -1 ? Infinity : index;
+};
+
 
 // Private sheet creation functions
 const createKeywordsSheet = (keywords: Keyword[]) => {
@@ -63,7 +75,25 @@ const createKeywordsSheet = (keywords: Keyword[]) => {
 };
 
 const createBibleSheet = (bibleData: BibleMaterialLocation[]) => {
-    const flattenedData = bibleData.flatMap(location =>
+    const sortedBibleData = [...bibleData].sort((a, b) => {
+        const bookIndexA = getBookIndex(a.book);
+        const bookIndexB = getBookIndex(b.book);
+    
+        if (bookIndexA !== bookIndexB) {
+            return bookIndexA - bookIndexB;
+        }
+        
+        if (a.chapterStart !== b.chapterStart) {
+            return a.chapterStart - b.chapterStart;
+        }
+    
+        const verseStartA = a.verseStart ?? 0;
+        const verseStartB = b.verseStart ?? 0;
+    
+        return verseStartA - verseStartB;
+    });
+
+    const flattenedData = sortedBibleData.flatMap(location =>
         location.materials.map(material => ({
           '성경': location.book,
           '시작 장': location.chapterStart,
