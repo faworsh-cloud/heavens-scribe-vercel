@@ -189,29 +189,32 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
         )}
         <button
           onClick={onOpenAnnouncement}
-          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+          className="p-2 rounded-full text-green-500 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
           aria-label="공지사항"
+          title="공지사항"
         >
           <ExclamationCircleIcon className="w-6 h-6" />
         </button>
         <button
           onClick={onOpenUserGuide}
-          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-          aria-label="사용 설명서"
+          className="p-2 rounded-full text-pink-500 dark:text-pink-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+          aria-label="도움말"
+          title="도움말"
         >
           <QuestionMarkCircleIcon className="w-6 h-6" />
         </button>
         <button
           onClick={onOpenSettings}
-          className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+          className="p-2 rounded-full text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
           aria-label="설정"
+          title="설정"
         >
           <Cog6ToothIcon className="w-6 h-6" />
         </button>
         <div className="relative">
           <button
             onClick={() => setIsFeedbackOpen(prev => !prev)}
-            className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+            className="p-2 rounded-full text-yellow-500 dark:text-yellow-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
             aria-label="피드백 보내기"
             title="피드백 보내기"
           >

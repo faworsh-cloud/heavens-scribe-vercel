@@ -44,7 +44,9 @@ const CURRENT_ANNOUNCEMENT: Announcement | null = {
 
 ---
 
-앱의 유무와 관련 없이 모든 자료는 엑셀 파일로 정리되어 자신의 컴퓨터에 안전하게 보관할 수 있으니, 마음껏 사용해 보시기 바랍니다.`,
+· 앱의 유무와 관련 없이 모든 자료는 엑셀 파일로 정리되어 자신의 컴퓨터에 안전하게 보관할 수 있으니, 마음껏 사용해 보시기 바랍니다.
+
+· 앱 개발을 위해 사용자의 많은 피드백이 필요합니다. 책임감을 가지고 관리자의 이메일(faworsh@gmail.com)로 피드백 부탁드립니다.`,
     enabled: true,
 };
 
@@ -392,25 +394,25 @@ const App: React.FC = () => {
         
         for (const item of importedKeywords) {
           // Add type guards to safely handle potentially malformed data from AI conversion.
-          if (typeof item !== 'object' || item === null || typeof (item as any).keyword !== 'string' || !(item as any).keyword) {
+          // FIX: Explicitly cast `item` to `ImportedKeyword` to resolve type inference issues.
+          const currentItem = item as ImportedKeyword;
+          if (typeof currentItem !== 'object' || currentItem === null || typeof currentItem.keyword !== 'string' || !currentItem.keyword) {
             continue;
           }
 
-          // Handle potentially malformed materials array
-          // FIX: The error "Property 'materials' does not exist on type 'unknown'" occurs here because `item` can be of `any` type and strict mode treats property access as unsafe. Casting to `any` makes the access explicit.
-          const newMaterials = (Array.isArray((item as any).materials) ? (item as any).materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
+          const newMaterials = (Array.isArray(currentItem.materials) ? currentItem.materials : []).map((m: Omit<Material, 'id' | 'createdAt'>) => ({
             ...m,
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString()
           }));
 
-          if (keywordsMap.has(item.keyword)) {
-            const existing = keywordsMap.get(item.keyword)!;
+          if (keywordsMap.has(currentItem.keyword)) {
+            const existing = keywordsMap.get(currentItem.keyword)!;
             existing.materials.push(...newMaterials);
           } else {
-            keywordsMap.set(item.keyword, {
+            keywordsMap.set(currentItem.keyword, {
               id: crypto.randomUUID(),
-              name: item.keyword,
+              name: currentItem.keyword,
               materials: newMaterials,
               createdAt: new Date().toISOString()
             });
@@ -547,7 +549,7 @@ const App: React.FC = () => {
     if (!globalSearchTerm) return null;
     const term = globalSearchTerm.toLowerCase();
 
-    const keywordResults = keywords.map(k => {
+    const keywordResults = keywords.map((k: Keyword) => {
         const matchingMaterials = k.materials.filter(m =>
             m.content.toLowerCase().includes(term) ||
             m.bookTitle.toLowerCase().includes(term) ||
@@ -559,7 +561,7 @@ const App: React.FC = () => {
         return null;
     }).filter((k): k is Keyword => k !== null);
 
-    const bibleResults = bibleData.map(l => {
+    const bibleResults = bibleData.map((l: BibleMaterialLocation) => {
         const matchingMaterials = l.materials.filter(m =>
             m.content.toLowerCase().includes(term) ||
             m.bookTitle.toLowerCase().includes(term) ||

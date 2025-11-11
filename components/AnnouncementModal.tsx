@@ -33,27 +33,27 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({ isOpen, onClose, 
             return <p key={index}>{line}</p>;
           })}
         </div>
-        <div className="mt-4 flex items-center">
-            <input
-                id="dont-show-again"
-                name="dont-show-again"
-                type="checkbox"
-                checked={dontShowAgain}
-                onChange={(e) => setDontShowAgain(e.target.checked)}
-                className="h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
-            />
-            <label htmlFor="dont-show-again" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                7일 동안 보지 않기
-            </label>
-        </div>
-        <div className="mt-6 flex justify-end flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => onClose(dontShowAgain)}
-            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            확인
-          </button>
+        <div className="mt-6 flex justify-between items-center flex-shrink-0">
+            <div className="flex items-center">
+                <input
+                    id="dont-show-again"
+                    name="dont-show-again"
+                    type="checkbox"
+                    checked={dontShowAgain}
+                    onChange={(e) => setDontShowAgain(e.target.checked)}
+                    className="h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
+                />
+                <label htmlFor="dont-show-again" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                    7일 동안 보지 않기
+                </label>
+            </div>
+            <button
+              type="button"
+              onClick={() => onClose(dontShowAgain)}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
+              확인
+            </button>
         </div>
       </div>
     </div>
