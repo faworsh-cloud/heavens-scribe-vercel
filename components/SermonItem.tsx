@@ -10,7 +10,11 @@ interface SermonItemProps {
 
 const SermonItem: React.FC<SermonItemProps> = ({ sermon, onEdit, onDelete }) => {
   return (
-    <div id={`sermon-${sermon.id}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border border-gray-200 dark:border-gray-700 relative group">
+    <div 
+        id={`sermon-${sermon.id}`} 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border border-gray-200 dark:border-gray-700 relative group cursor-pointer"
+        onDoubleClick={() => onEdit(sermon)}
+    >
         <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
                 onClick={() => onEdit(sermon)}

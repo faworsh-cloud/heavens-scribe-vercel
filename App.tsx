@@ -430,7 +430,9 @@ const App: React.FC = () => {
             'materials' in item &&
             Array.isArray((item as any).materials)
           ) {
-            const { keyword, materials } = item as ImportedKeyword;
+            // FIX: The destructuring with a type cast was causing a TypeScript error. Replaced with direct property access for safer type handling.
+            const keyword = (item as ImportedKeyword).keyword;
+            const materials = (item as ImportedKeyword).materials;
 
             if (!keyword) {
               continue;
