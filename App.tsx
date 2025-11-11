@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Keyword, Material, BibleMaterialLocation, Sermon, Announcement } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useGoogleDrive } from './hooks/useGoogleDrive';
+import { useI18n } from './i18n';
 import { hashPin, verifyPin } from './utils/auth';
 import { exportAllData, importAllData, downloadTemplate, updateDataAndExport } from './utils/excelUtils';
 
@@ -30,28 +31,31 @@ interface AppData {
   lastModified: string;
 }
 
-const CURRENT_ANNOUNCEMENT: Announcement | null = {
-    id: 'announcement-help-guide-20240728', // Unique ID for this announcement version
-    content: `**'도움말'은 시작 화면 우측 상단에 '?'를 클릭하시면 볼 수 있습니다. 꼭 읽어 주세요.**
+const App: React.FC = () => {
+  const { t, language } = useI18n();
 
-## 자료 관리 방법은 2가지 입니다.
+  const announcementContent = `**${t('userGuide.welcome')}**
 
-**1. 앱의 데이터를 엑셀 파일로 변환시켜 관리 (추천)**
-이 방법으로 충분히 사용이 가능합니다. 기본적으로 하나의 편집 수단(예: 컴퓨터 또는 노트북)에서만 편집하고, 다른 기기(패드, 핸드폰)는 보기 용도로 사용하는 것을 권장합니다.
+## ${t('userGuide.coreConceptTitle')}
 
-**2. Google Drive 동기화 기능 (실시간 연동)**
-이 기능을 사용하면 패드, 핸드폰, 컴퓨터 등 여러 기기에서 데이터를 동기화하며 사용할 수 있습니다.
+**1. ${t('userGuide.workflowSteps').split('→')[0].trim()}**
+${t('userGuide.step1Body')}
+
+**2. ${t('userGuide.workflowSteps').split('→')[1].trim()}**
+${t('userGuide.step2Body')}
 
 ---
 
-· 앱의 유무와 관련 없이 모든 자료는 엑셀 파일로 정리되어 자신의 컴퓨터에 안전하게 보관할 수 있으니, 마음껏 사용해 보시기 바랍니다.
+· ${t('userGuide.featureHwpConvert')}
 
-· 앱 개발을 위해 사용자의 많은 피드백이 필요합니다. 책임감을 가지고 관리자의 이메일(faworsh@gmail.com)로 피드백 부탁드립니다.`,
+· ${t('userGuide.featureGdriveSync')}`;
+
+  const CURRENT_ANNOUNCEMENT: Announcement | null = useMemo(() => ({
+    id: 'announcement-help-guide-20240728',
+    content: announcementContent,
     enabled: true,
-};
+  }), [language, announcementContent]);
 
-
-const App: React.FC = () => {
   // Global State
   const [mode, setMode] = useLocalStorage<AppMode>('app-mode', 'keyword');
   const [fontSize, setFontSize] = useLocalStorage<FontSize>('font-size', 'base');
@@ -257,7 +261,7 @@ const App: React.FC = () => {
     if (pinHash && await verifyPin(pin, pinHash)) {
       setIsAuthenticated(true);
     } else {
-      alert('PIN이 잘못되었습니다.');
+      alert(t('app.wrongPin'));
     }
   };
 
@@ -266,7 +270,7 @@ const App: React.FC = () => {
     setPinHash(newHash);
     setPinEnabled(true);
     setIsPinModalOpen(false);
-    alert('PIN이 설정되었습니다.');
+    alert(t('app.pinSet'));
   };
   
 
@@ -388,7 +392,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteSermon = (id: string) => {
-      if(window.confirm('이 설교를 정말 삭제하시겠습니까?')) {
+      if(window.confirm(t('common.deleteSermonConfirm', { title: sermons.find(s => s.id === id)?.title || ''}))) {
           setSermons(prev => prev.filter(s => s.id !== id));
           if(selectedSermonId === id) {
               setSelectedSermonId(null);
@@ -399,7 +403,7 @@ const App: React.FC = () => {
   // HWP Import Handler
   const handleImportData = useCallback((data: any[], type: 'keyword' | 'bible' | 'sermon') => {
     if (!data || data.length === 0) {
-        alert('추가할 데이터가 없습니다.');
+        alert(t('app.noDataToAdd'));
         return;
     }
 
@@ -421,34 +425,31 @@ const App: React.FC = () => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
         for (const item of importedKeywords) {
-          // FIX: Add a type guard to safely handle imported data, preventing errors from malformed entries.
+          // FIX: Strengthen type guard to help TypeScript inference and prevent errors.
           if (
             item &&
             typeof item === 'object' &&
             'keyword' in item &&
-            typeof (item as any).keyword === 'string' &&
+            typeof item.keyword === 'string' &&
             'materials' in item &&
-            Array.isArray((item as any).materials)
+            Array.isArray(item.materials)
           ) {
-            // FIX: The destructuring with a type cast was causing a TypeScript error. Replaced with direct property access for safer type handling.
-            // FIX: Replaced spread destructuring with direct property access to resolve type errors.
-            // The spread operator on an `any` type was causing issues with strict compiler settings.
-            const keyword = (item as ImportedKeyword).keyword;
-            const materials = (item as ImportedKeyword).materials;
+            const keyword = item.keyword;
+            const materials = item.materials as Omit<Material, 'id' | 'createdAt'>[];
 
             if (!keyword) {
               continue;
             }
 
             const newMaterials = materials
-              .filter(m => typeof m === 'object' && m !== null) // Ensure materials are objects
+              .filter(m => typeof m === 'object' && m !== null) 
               .map((m) => ({
-                bookTitle: (m as any).bookTitle || '',
-                author: (m as any).author || '',
-                publicationInfo: (m as any).publicationInfo || '',
-                pages: (m as any).pages || '',
-                content: (m as any).content || '',
-                contentImage: (m as any).contentImage || null,
+                bookTitle: m.bookTitle || '',
+                author: m.author || '',
+                publicationInfo: m.publicationInfo || '',
+                pages: m.pages || '',
+                content: m.content || '',
+                contentImage: m.contentImage || null,
                 id: crypto.randomUUID(),
                 createdAt: new Date().toISOString()
               }));
@@ -492,20 +493,20 @@ const App: React.FC = () => {
       setSermons(currentSermons => [...currentSermons, ...importedSermons]);
     }
     
-    setToast({ message: `${itemsAddedCount}개 항목이 추가되었습니다. 설정에서 되돌릴 수 있습니다.` });
+    setToast({ message: t('app.importSuccess', { count: itemsAddedCount }) });
     setMode(type);
 
-  }, [keywords, bibleData, sermons, lastModified, setKeywords, setBibleData, setSermons, setMode, setImportBackup]);
+  }, [keywords, bibleData, sermons, lastModified, setKeywords, setBibleData, setSermons, setMode, setImportBackup, t]);
   
   const handleRestoreFromImportBackup = () => {
-    if (importBackup && window.confirm('마지막 가져오기 작업을 실행 취소하고 데이터를 이전 상태로 복원하시겠습니까?')) {
+    if (importBackup && window.confirm(t('app.restoreBackupConfirm'))) {
         isBulkUpdating.current = true;
         _setKeywords(importBackup.keywords);
         _setBibleData(importBackup.bibleData);
         _setSermons(importBackup.sermons);
         setLastModified(importBackup.lastModified);
         setImportBackup(null);
-        setToast({ message: '데이터가 이전 버전으로 복원되었습니다.' });
+        setToast({ message: t('app.dataRestored') });
         setIsSettingsModalOpen(false);
         setTimeout(() => { isBulkUpdating.current = false; }, 100);
     }
@@ -513,25 +514,33 @@ const App: React.FC = () => {
 
   // --- Unified Excel Handlers ---
   const handleUnifiedExport = useCallback(async () => {
-    if (originalWorkbook && originalFileName) {
-      await updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
-    } else {
-      await exportAllData(keywords, bibleData, sermons);
+    try {
+      if (originalWorkbook && originalFileName) {
+        await updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
+      } else {
+        await exportAllData(keywords, bibleData, sermons);
+      }
+      const now = new Date().toISOString();
+      setLastModified(now);
+      setLastSavedTimestamp(now);
+    } catch (e: any) {
+        alert(t('excel.exportError'));
     }
-    const now = new Date().toISOString();
-    setLastModified(now);
-    setLastSavedTimestamp(now);
-  }, [originalWorkbook, originalFileName, keywords, bibleData, sermons, setLastModified, setLastSavedTimestamp]);
+  }, [originalWorkbook, originalFileName, keywords, bibleData, sermons, setLastModified, setLastSavedTimestamp, t]);
 
   const handleDownloadTemplateFile = async () => {
-    await downloadTemplate();
+    try {
+        await downloadTemplate();
+    } catch (e: any) {
+        alert(t('excel.templateError'));
+    }
   };
 
   const handleImportAllData = async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
 
-      if (!window.confirm("엑셀 파일에서 모든 데이터를 가져옵니다. 현재 앱의 모든 데이터(키워드, 성경, 설교)가 덮어쓰여집니다. 계속하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
+      if (!window.confirm(t('app.importAllConfirm'))) {
           if (event.target) event.target.value = ''; // Reset file input
           return;
       }
@@ -551,10 +560,14 @@ const App: React.FC = () => {
           setLastModified(now);
           setLastSavedTimestamp(now);
 
-          alert(`데이터 가져오기가 완료되었습니다.\n- 키워드: ${importedKeywords.length}개\n- 성경 자료: ${importedBibleData.length}개 위치\n- 설교: ${importedSermons.length}개`);
+          alert(t('app.importComplete', {
+            keywords: importedKeywords.length,
+            bible: importedBibleData.length,
+            sermons: importedSermons.length
+          }));
           setIsSettingsModalOpen(false);
       } catch (error: any) {
-          alert(error.message || "데이터를 가져오는 중 오류가 발생했습니다.");
+          alert(t('app.importError', { message: error.message || "An unknown error occurred" }));
       } finally {
           if (event.target) event.target.value = ''; // Reset file input
           setTimeout(() => { isBulkUpdating.current = false; }, 100);
@@ -580,7 +593,7 @@ const App: React.FC = () => {
   // --- Modal Openers ---
   const openAddMaterialModal = (context: any = {}) => {
     if (mode === 'keyword' && !selectedKeywordId) {
-        alert('자료를 추가할 키워드를 선택해주세요.');
+        alert(t('app.noKeywordSelected'));
         return;
     }
     setMaterialToEdit(null);
@@ -648,18 +661,12 @@ const App: React.FC = () => {
     setMode('search');
   }
   
-  // FIX: Replace `any` with a specific union type for better type safety.
-  // The 'item' parameter was using 'any', which bypasses type checking. 
-  // By using a specific union type, we leverage TypeScript's type safety.
-  // Additionally, an unsafe cast for 'bible' mode was replaced with a type guard.
   const handleSearchResultClick = (item: Keyword | BibleMaterialLocation | Sermon, type: 'keyword' | 'bible' | 'sermon') => {
       if (type === 'keyword') {
           setMode('keyword');
           setSelectedKeywordId(item.id);
       } else if (type === 'bible') {
           setMode('bible');
-          // FIX: The original cast was unsafe. Adding a type guard to ensure 'item' is a BibleMaterialLocation.
-          // The 'book' property is unique to BibleMaterialLocation in the union type.
           if ('book' in item) {
             setSelectedBook(item.book);
           }

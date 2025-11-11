@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Keyword } from '../types';
 import { PlusIcon, TrashIcon } from './icons';
+import { useI18n } from '../i18n';
 
 interface KeywordListProps {
   newKeywords: Keyword[];
@@ -12,6 +13,7 @@ interface KeywordListProps {
 }
 
 const KeywordList: React.FC<KeywordListProps> = ({ newKeywords, oldKeywords, selectedKeywordId, onSelectKeyword, onAddKeyword, onDeleteKeyword }) => {
+  const { t } = useI18n();
   const [newKeywordName, setNewKeywordName] = useState('');
 
   const handleAddKeyword = (e: React.FormEvent) => {
@@ -36,7 +38,7 @@ const KeywordList: React.FC<KeywordListProps> = ({ newKeywords, oldKeywords, sel
          <span
             onClick={(e) => {
               e.stopPropagation();
-              if (window.confirm(`'${keyword.name}' 키워드와 모든 자료를 삭제하시겠습니까?`)) {
+              if (window.confirm(t('keywordMode.deleteConfirm', { name: keyword.name }))) {
                 onDeleteKeyword(keyword.id);
               }
             }}
@@ -50,13 +52,13 @@ const KeywordList: React.FC<KeywordListProps> = ({ newKeywords, oldKeywords, sel
 
   return (
     <div className="bg-white dark:bg-gray-800/50 p-4 rounded-lg shadow-md h-full flex flex-col">
-      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">키워드(단어)</h2>
+      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">{t('keywordMode.sidebarTitle')}</h2>
       <form onSubmit={handleAddKeyword} className="flex mb-4">
         <input
           type="text"
           value={newKeywordName}
           onChange={(e) => setNewKeywordName(e.target.value)}
-          placeholder="새 키워드"
+          placeholder={t('keywordMode.newKeywordPlaceholder')}
           className="flex-grow min-w-0 px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm text-gray-900 dark:text-gray-100"
         />
         <button
@@ -72,7 +74,7 @@ const KeywordList: React.FC<KeywordListProps> = ({ newKeywords, oldKeywords, sel
           {newKeywords.length > 0 && (
             <>
               <li>
-                <h3 className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">최근 작업</h3>
+                <h3 className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('keywordMode.recentWork')}</h3>
               </li>
               {newKeywords.map(renderKeywordItem)}
               {oldKeywords.length > 0 && (

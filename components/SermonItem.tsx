@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sermon } from '../types';
 import { PencilIcon, TrashIcon } from './icons';
+import { useI18n } from '../i18n';
 
 interface SermonItemProps {
   sermon: Sermon;
@@ -9,6 +10,8 @@ interface SermonItemProps {
 }
 
 const SermonItem: React.FC<SermonItemProps> = ({ sermon, onEdit, onDelete }) => {
+  const { t } = useI18n();
+  
   return (
     <div 
         id={`sermon-${sermon.id}`} 
@@ -19,20 +22,20 @@ const SermonItem: React.FC<SermonItemProps> = ({ sermon, onEdit, onDelete }) => 
             <button
                 onClick={() => onEdit(sermon)}
                 className="p-2 text-gray-500 hover:text-primary-500 dark:hover:text-primary-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                aria-label="설교 수정"
-                title="설교 수정"
+                aria-label={t('common.edit')}
+                title={t('common.edit')}
             >
                 <PencilIcon className="w-5 h-5"/>
             </button>
             <button
                 onClick={() => {
-                    if (window.confirm(`'${sermon.title}' 설교를 정말 삭제하시겠습니까?`)) {
+                    if (window.confirm(t('common.deleteSermonConfirm', { title: sermon.title }))) {
                         onDelete(sermon.id);
                     }
                 }}
                 className="p-2 text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                aria-label="설교 삭제"
-                title="설교 삭제"
+                aria-label={t('common.delete')}
+                title={t('common.delete')}
             >
                 <TrashIcon className="w-5 h-5"/>
             </button>
@@ -46,7 +49,7 @@ const SermonItem: React.FC<SermonItemProps> = ({ sermon, onEdit, onDelete }) => 
                     ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' 
                     : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
                 }`}>
-                    {sermon.style === 'topic' ? '주제 설교' : '본문 설교'}
+                    {sermon.style === 'topic' ? t('modals.addSermon.styleTopic') : t('modals.addSermon.styleExpository')}
                 </span>
                 <span>{sermon.preacher}</span>
                 <span className="hidden sm:inline">|</span>

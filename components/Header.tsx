@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SearchIcon, Cog6ToothIcon, GoogleDriveIcon, XMarkIcon, Bars3Icon, ArrowUpTrayIcon, QuestionMarkCircleIcon, EnvelopeIcon, ExclamationCircleIcon } from './icons';
 import { UserProfile } from '../types';
+import { useI18n } from '../i18n';
 
 interface HeaderProps {
   mode: 'keyword' | 'bible' | 'sermon' | 'search' | 'hwp';
@@ -28,6 +29,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUserGuide, onOpenAnnouncement, gdrive, onSearch, onToggleSidebar, isDataDirty, onUpdate, isUpdateExport, onImportAll, hwpConversionEnabled, apiKey, clientId }) => {
+  const { t, language, setLanguage } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -35,6 +37,10 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
   const feedbackMenuRef = useRef<HTMLDivElement>(null);
 
   const isDriveConfigured = !!(apiKey && clientId);
+  
+  const toggleLanguage = () => {
+    setLanguage(language === 'ko' ? 'en' : 'ko');
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,11 +89,11 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText('faworsh@gmail.com').then(() => {
-        alert('이메일 주소가 복사되었습니다.');
+        alert(t('header.emailCopied'));
         setIsFeedbackOpen(false);
     }).catch(err => {
         console.error('Failed to copy email: ', err);
-        alert('이메일 주소 복사에 실패했습니다.');
+        alert(t('header.emailCopyFailed'));
     });
   };
 
@@ -105,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
               onClick={gdrive.syncData}
               disabled={!gdrive.isSignedIn}
               className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-              title={gdrive.isSignedIn ? 'Google Drive에 지금 동기화' : '로그인하여 동기화 활성화'}
+              title={gdrive.isSignedIn ? t('header.syncNowTooltip') : t('header.syncDisabledTooltip')}
           >
               <GoogleDriveIcon className={`w-5 h-5 ${gdrive.isSignedIn ? syncIndicatorColor[gdrive.syncStatus] : 'text-gray-400'}`}/>
           </button>
@@ -119,7 +125,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                   </button>
               ) : (
                   <button onClick={() => gdrive.handleSignIn()} className="px-2 py-1 sm:px-3 sm:py-1.5 text-sm font-semibold rounded-full transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600">
-                      로그인
+                      {t('header.login')}
                   </button>
               )}
               {isProfileOpen && gdrive.userProfile && (
@@ -133,7 +139,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                               onClick={() => { gdrive.handleSignOut(); setIsProfileOpen(false); }} 
                               className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
-                              로그아웃
+                              {t('header.logout')}
                           </button>
                       </div>
                   </div>
@@ -151,21 +157,21 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
             <button
             onClick={onToggleSidebar}
             className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none lg:hidden"
-            aria-label="메뉴 열기"
+            aria-label="Open menu"
             >
             <Bars3Icon className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400 hidden sm:block">Heaven's Scribe</h1>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-primary-600 dark:text-primary-400 hidden sm:block">{t('header.title')}</h1>
         </div>
         
         <div className="flex items-center space-x-1 sm:space-x-2">
             {!isUpdateExport && (
                 <label
                 className="cursor-pointer flex items-center gap-2 p-2 sm:px-3 sm:py-2 text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                title="시작하려면 엑셀 파일에서 데이터를 가져오세요."
+                title={t('header.importAllDataTooltip')}
                 >
                 <ArrowUpTrayIcon className="w-5 h-5" />
-                <span className="hidden sm:inline whitespace-nowrap">전체 데이터 가져오기</span>
+                <span className="hidden sm:inline whitespace-nowrap">{t('header.importAllData')}</span>
                 <input type="file" accept=".xlsx, .xls" className="hidden" onChange={onImportAll} />
                 </label>
             )}
@@ -174,40 +180,47 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
             <button
             onClick={onOpenAnnouncement}
             className="p-2 rounded-full text-green-500 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-            aria-label="공지사항"
-            title="공지사항"
+            aria-label={t('header.announcementTooltip')}
+            title={t('header.announcementTooltip')}
             >
             <ExclamationCircleIcon className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             <button
             onClick={onOpenUserGuide}
             className="p-2 rounded-full text-pink-500 dark:text-pink-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-            aria-label="도움말"
-            title="도움말"
+            aria-label={t('header.helpTooltip')}
+            title={t('header.helpTooltip')}
             >
             <QuestionMarkCircleIcon className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             <button
             onClick={onOpenSettings}
             className="p-2 rounded-full text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-            aria-label="설정"
-            title="설정"
+            aria-label={t('header.settingsTooltip')}
+            title={t('header.settingsTooltip')}
             >
             <Cog6ToothIcon className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
+             <button
+                onClick={toggleLanguage}
+                className="px-2 py-1 text-xs font-bold rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Change language"
+              >
+                {t('header.langToggle')}
+              </button>
             <div className="relative">
             <button
                 onClick={() => setIsFeedbackOpen(prev => !prev)}
                 className="p-2 rounded-full text-yellow-500 dark:text-yellow-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-                aria-label="피드백 보내기"
-                title="피드백 보내기"
+                aria-label={t('header.feedbackTooltip')}
+                title={t('header.feedbackTooltip')}
             >
                 <EnvelopeIcon className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             {isFeedbackOpen && (
                 <div ref={feedbackMenuRef} className="absolute right-0 mt-2 w-64 origin-top-right bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
                 <div className="p-4">
-                    <p className="text-sm font-semibold text-gray-800 dark:text-white mb-2">관리자 이메일</p>
+                    <p className="text-sm font-semibold text-gray-800 dark:text-white mb-2">{t('header.feedbackTitle')}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 p-2 rounded-md break-all">
                         faworsh@gmail.com
                     </p>
@@ -215,7 +228,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                     onClick={handleCopyEmail}
                     className="mt-3 w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                     >
-                    주소 복사
+                    {t('header.copyEmail')}
                     </button>
                 </div>
                 </div>
@@ -228,7 +241,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
             <form onSubmit={handleSearchSubmit} className="relative w-full max-w-md">
                 <input
                     type="search"
-                    placeholder="전체 검색..."
+                    placeholder={t('header.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-8 sm:pl-9 pr-3 py-1.5 sm:py-2 text-sm border rounded-full bg-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -240,26 +253,26 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
             <div className="flex items-center gap-2">
                 <nav className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1 rounded-full">
                     <button onClick={() => setMode('keyword')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'keyword' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                    키워드
+                    {t('header.navKeyword')}
                     </button>
                     <button onClick={() => setMode('bible')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'bible' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                    성경
+                    {t('header.navBible')}
                     </button>
                     <button onClick={() => setMode('sermon')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'sermon' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                    설교
+                    {t('header.navSermon')}
                     </button>
                     {hwpConversionEnabled && (
                         <button onClick={() => setMode('hwp')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'hwp' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
-                        HWP 변환
+                        {t('header.navHwp')}
                         </button>
                     )}
                 </nav>
                 <button
                     onClick={onUpdate}
                     className="px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap bg-red-500 text-white shadow hover:bg-red-600"
-                    title={isDataDirty ? "변경사항 저장 (Ctrl+S)" : "변경사항이 없습니다"}
+                    title={isDataDirty ? t('header.saveButtonDirtyTooltip') : t('header.saveButtonCleanTooltip')}
                 >
-                    저장하기
+                    {t('header.saveButton')}
                 </button>
             </div>
       </div>
