@@ -3,7 +3,6 @@ import { Keyword, Material } from '../types';
 import KeywordList from './TopicList';
 import MaterialList from './MaterialList';
 import { SearchIcon, XMarkIcon } from './icons';
-import { useI18n } from '../i18n';
 
 interface KeywordModeProps {
   keywords: Keyword[];
@@ -32,7 +31,6 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
   isSidebarOpen,
   setIsSidebarOpen,
 }) => {
-  const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState('');
   
   const { newKeywords, oldKeywords } = useMemo(() => {
@@ -103,7 +101,7 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
         <button
           onClick={() => setIsSidebarOpen(false)}
           className="absolute top-3 right-3 p-1 text-gray-500 dark:text-gray-400 lg:hidden"
-          aria-label="Close menu"
+          aria-label="메뉴 닫기"
         >
           <XMarkIcon className="w-6 h-6" />
         </button>
@@ -113,7 +111,7 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
             </div>
             <input
                 type="text"
-                placeholder={t('keywordMode.searchPlaceholder')}
+                placeholder="키워드 또는 내용 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"

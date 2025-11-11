@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { verifyPin } from '../utils/auth';
 import { XMarkIcon } from './icons';
-import { useI18n } from '../i18n';
 
 interface PinManagementModalProps {
   isOpen: boolean;
@@ -16,7 +15,6 @@ const PinManagementModal: React.FC<PinManagementModalProps> = ({
   onPinSet,
   pinHash,
 }) => {
-  const { t } = useI18n();
   const [stage, setStage] = useState<'enterOld' | 'setNew'>(pinHash ? 'enterOld' : 'setNew');
   const [oldPin, setOldPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -41,7 +39,7 @@ const PinManagementModal: React.FC<PinManagementModalProps> = ({
       setStage('setNew');
       setError('');
     } else {
-      setError(t('modals.pin.errorOldPinMismatch'));
+      setError('기존 PIN이 일치하지 않습니다.');
     }
   };
 
@@ -49,11 +47,11 @@ const PinManagementModal: React.FC<PinManagementModalProps> = ({
     e.preventDefault();
     setError('');
     if (newPin.length < 4) {
-      setError(t('modals.pin.errorMinLength'));
+      setError('PIN은 4자리 이상이어야 합니다.');
       return;
     }
     if (newPin !== confirmPin) {
-      setError(t('modals.pin.errorNewPinMismatch'));
+      setError('새 PIN이 일치하지 않습니다.');
       return;
     }
     onPinSet(newPin);
@@ -70,50 +68,50 @@ const PinManagementModal: React.FC<PinManagementModalProps> = ({
         
         {stage === 'enterOld' && (
           <form onSubmit={handleOldPinSubmit} className="space-y-4">
-            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">{t('modals.pin.checkOldTitle')}</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">기존 PIN 확인</h2>
             <div>
-              <label htmlFor="old-pin" className="sr-only">{t('modals.pin.oldPinPlaceholder')}</label>
+              <label htmlFor="old-pin" className="sr-only">기존 PIN</label>
               <input
                 id="old-pin" type="password" value={oldPin} onChange={(e) => setOldPin(e.target.value)}
-                placeholder={t('modals.pin.oldPinPlaceholder')}
+                placeholder="기존 PIN 입력"
                 className="w-full px-4 py-2 text-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 autoFocus
               />
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <button type="submit" className="w-full px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700">
-              {t('modals.pin.verify')}
+              확인
             </button>
           </form>
         )}
         
         {stage === 'setNew' && (
           <form onSubmit={handleNewPinSubmit} className="space-y-4">
-            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">{pinHash ? t('modals.pin.setNewTitle') : t('modals.pin.setTitle')}</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">{pinHash ? '새 PIN 설정' : 'PIN 설정'}</h2>
             <div>
-              <label htmlFor="new-pin" className="sr-only">{t('modals.pin.newPinPlaceholder')}</label>
+              <label htmlFor="new-pin" className="sr-only">새 PIN</label>
               <input
                 id="new-pin" type="password" value={newPin} onChange={(e) => setNewPin(e.target.value)}
-                placeholder={t('modals.pin.newPinPlaceholder')}
+                placeholder="새 PIN 입력 (4자리 이상)"
                 className="w-full px-4 py-2 text-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 autoFocus
               />
             </div>
             <div>
-              <label htmlFor="confirm-new-pin" className="sr-only">{t('modals.pin.confirmPinPlaceholder')}</label>
+              <label htmlFor="confirm-new-pin" className="sr-only">새 PIN 확인</label>
               <input
                 id="confirm-new-pin" type="password" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)}
-                placeholder={t('modals.pin.confirmPinPlaceholder')}
+                placeholder="새 PIN 확인"
                 className="w-full px-4 py-2 text-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
              <div className="flex justify-end space-x-3 pt-2">
               <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600">
-                {t('common.cancel')}
+                취소
               </button>
               <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
-                {t('common.save')}
+                저장
               </button>
             </div>
           </form>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Material } from '../types';
 import { PencilIcon, TrashIcon } from './icons';
-import { useI18n } from '../i18n';
 
 interface MaterialItemProps {
   material: Material;
@@ -27,8 +26,6 @@ const formatCitation = (material: Material) => {
 }
 
 const MaterialItem: React.FC<MaterialItemProps> = ({ material, onEdit, onDelete, hideActions }) => {
-  const { t } = useI18n();
-  
   return (
     <div 
         className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border border-gray-200 dark:border-gray-700 relative group cursor-pointer"
@@ -36,10 +33,10 @@ const MaterialItem: React.FC<MaterialItemProps> = ({ material, onEdit, onDelete,
     >
         {!hideActions && (
           <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => onEdit(material)} className="text-gray-400 hover:text-primary-500 dark:hover:text-primary-400" title={t('common.edit')}>
+              <button onClick={() => onEdit(material)} className="text-gray-400 hover:text-primary-500 dark:hover:text-primary-400">
                   <PencilIcon className="w-5 h-5"/>
               </button>
-              <button onClick={() => onDelete(material.id)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400" title={t('common.delete')}>
+              <button onClick={() => onDelete(material.id)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400">
                   <TrashIcon className="w-5 h-5"/>
               </button>
           </div>

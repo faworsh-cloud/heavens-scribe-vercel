@@ -2,7 +2,6 @@ import React from 'react';
 import { Keyword, BibleMaterialLocation, Sermon } from '../types';
 import MaterialItem from './MaterialItem';
 import { SearchIcon } from './icons';
-import { useI18n } from '../i18n';
 
 interface SearchResults {
     keywords: Keyword[];
@@ -17,7 +16,6 @@ interface GlobalSearchResultsProps {
 }
 
 const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({ results, searchTerm, onClick }) => {
-    const { t } = useI18n();
     const totalResults = results.keywords.length + results.bible.length + results.sermons.length;
     
     const formatBibleLocation = (location: BibleMaterialLocation): string => {
@@ -43,21 +41,21 @@ const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({ results, sear
         <div className="w-full p-4 sm:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-800/50">
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-                    {t('bibleMode.noResultsTitle')} '<span className="text-primary-600">{searchTerm}</span>'
+                    '<span className="text-primary-600">{searchTerm}</span>' 검색 결과
                 </h1>
 
                 {totalResults === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8">
                         <SearchIcon className="w-12 h-12 mb-4 text-gray-400" />
-                        <h3 className="text-lg font-semibold">{t('bibleMode.noResultsTitle')}</h3>
-                        <p>{t('bibleMode.noResultsBody', { searchTerm })}</p>
+                        <h3 className="text-lg font-semibold">검색 결과가 없습니다</h3>
+                        <p>다른 검색어로 다시 시도해보세요.</p>
                     </div>
                 ) : (
                     <div className="space-y-8">
                         {results.keywords.length > 0 && (
                             <section>
                                 <h2 className="text-xl font-semibold mb-3 pb-2 border-b-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
-                                    {t('hwpMode.typeKeyword')} ({results.keywords.reduce((acc, k) => acc + (k.materials.length || 1), 0)})
+                                    키워드 자료 ({results.keywords.reduce((acc, k) => acc + (k.materials.length || 1), 0)})
                                 </h2>
                                 <div className="space-y-4">
                                     {results.keywords.map(keyword => (
@@ -87,7 +85,7 @@ const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({ results, sear
                         {results.bible.length > 0 && (
                              <section>
                                 <h2 className="text-xl font-semibold mb-3 pb-2 border-b-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
-                                    {t('hwpMode.typeBible')} ({results.bible.reduce((acc, l) => acc + l.materials.length, 0)})
+                                    성경 자료 ({results.bible.reduce((acc, l) => acc + l.materials.length, 0)})
                                 </h2>
                                 <div className="space-y-4">
                                     {results.bible.map(location => (
@@ -115,7 +113,7 @@ const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({ results, sear
                         {results.sermons.length > 0 && (
                             <section>
                                 <h2 className="text-xl font-semibold mb-3 pb-2 border-b-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200">
-                                    {t('hwpMode.typeSermon')} ({results.sermons.length})
+                                    설교 자료 ({results.sermons.length})
                                 </h2>
                                 <div className="space-y-3">
                                     {results.sermons.map(sermon => (

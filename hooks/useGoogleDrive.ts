@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef, SetStateAction } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import { useI18n } from '../i18n';
 import { Keyword, BibleMaterialLocation, Sermon, UserProfile } from '../types';
 
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
@@ -27,7 +26,6 @@ export const useGoogleDrive = (
     localLastModified: string,
     setLocalLastModified: (value: SetStateAction<string>) => void
 ) => {
-    const { t } = useI18n();
     const [gapiReady, setGapiReady] = useState(false);
     const [gsiReady, setGsiReady] = useState(false);
     const [tokenClient, setTokenClient] = useState<any>(null);
@@ -125,7 +123,7 @@ export const useGoogleDrive = (
             }
             tokenClient.requestAccessToken({prompt: ''});
         } else {
-            alert(t('gdrive.authError'));
+            alert('Google 로그인 서비스가 준비되지 않았습니다. Client ID가 올바르게 설정되었는지 확인 후 잠시 뒤 다시 시도해주세요.');
         }
     };
     
@@ -218,7 +216,7 @@ export const useGoogleDrive = (
     
     const syncData = useCallback(async () => {
         if (!isSignedIn) {
-            alert(t('gdrive.notConnected'));
+            alert('Google Drive에 연결되지 않았습니다. 먼저 로그인 해주세요.');
             return;
         }
         setSyncStatus('syncing');
@@ -226,7 +224,7 @@ export const useGoogleDrive = (
         try {
             if (!isDriveInitialized.current) {
                 if (!apiKey) {
-                    alert(t('gdrive.apiKeyRequired'));
+                    alert('Google Drive 동기화를 사용하려면 설정에서 API 키를 입력해야 합니다.');
                     setSyncStatus('error');
                     return;
                 }
@@ -240,17 +238,17 @@ export const useGoogleDrive = (
             let fileId = driveFileId || await findFile();
 
             if (!fileId) {
-                if (window.confirm(t('gdrive.fileNotFoundConfirm', { fileName: APP_FILE_NAME }))) {
+                if (window.confirm(`'${APP_FILE_NAME}' 파일을 Google Drive에서 찾을 수 없습니다. 새로 생성하시겠습니까?`)) {
                     fileId = await createFile();
                     if (fileId) {
                         await uploadData(fileId, { keywords: localKeywords, bibleData: localBibleData, sermons: localSermons, lastModified: localLastModified });
-                        alert(t('gdrive.newFileCreated'));
+                        alert('Google Drive에 새 데이터 파일을 생성하고 현재 데이터를 업로드했습니다.');
                         setSyncStatus('synced');
                         return;
                     }
                 }
                 if (!fileId) {
-                    alert(t('gdrive.syncAbort'));
+                    alert('Google Drive 파일을 설정할 수 없어 동기화를 중단합니다.');
                     setSyncStatus('error');
                     return;
                 }
@@ -259,10 +257,10 @@ export const useGoogleDrive = (
             const driveData = await downloadData(fileId);
 
             if (!driveData) {
-                if (window.confirm(t('gdrive.fetchFailedConfirm'))) {
+                if (window.confirm('Drive에서 데이터를 가져오는 데 실패했습니다. 현재 로컬 데이터를 Drive에 업로드하시겠습니까?')) {
                    await uploadData(fileId, { keywords: localKeywords, bibleData: localBibleData, sermons: localSermons, lastModified: localLastModified });
                    setSyncStatus('synced');
-                   alert(t('gdrive.localDataUploaded'));
+                   alert('로컬 데이터가 Google Drive에 업로드되었습니다.');
                 } else {
                    setSyncStatus('idle');
                 }
@@ -275,7 +273,7 @@ export const useGoogleDrive = (
             const localDate = new Date(localLastModified || 0);
 
             if (Math.abs(driveDate.getTime() - localDate.getTime()) < 2000) {
-                alert(t('gdrive.alreadyLatest'));
+                alert('데이터가 이미 최신 상태입니다.');
                 setSyncStatus('synced');
                 return;
             }
@@ -283,34 +281,34 @@ export const useGoogleDrive = (
             if (driveDate > localDate) {
                 window.localStorage.setItem(BACKUP_KEY, JSON.stringify(localData));
                 setIsBackupAvailable(true);
-                if (window.confirm(t('gdrive.remoteIsNewerConfirm'))) {
+                if (window.confirm('Google Drive에 최신 버전의 자료가 있습니다. 동기화하시겠습니까? (현재 자료는 백업됩니다)')) {
                     setLocalKeywords(driveData.keywords || []);
                     setLocalBibleData(driveData.bibleData || []);
                     setLocalSermons(driveData.sermons || []);
                     setLocalLastModified(driveData.lastModified);
-                    alert(t('gdrive.syncComplete'));
+                    alert('동기화가 완료되었습니다.');
                     setSyncStatus('synced');
                 } else {
-                    alert(t('gdrive.syncCancelled'));
+                    alert('동기화가 취소되었습니다.');
                     setSyncStatus('idle');
                 }
             } else {
-                if (window.confirm(t('gdrive.localIsNewerConfirm'))) {
+                if (window.confirm('로컬 자료가 더 최신입니다. Google Drive에 업로드하시겠습니까?')) {
                     await uploadData(fileId, localData);
-                    alert(t('gdrive.localDataUploaded'));
+                    alert('Google Drive에 업로드되었습니다.');
                     setSyncStatus('synced');
                 } else {
-                    alert(t('gdrive.uploadCancelled'));
+                    alert('업로드가 취소되었습니다.');
                     setSyncStatus('idle');
                 }
             }
         } catch (error) {
             console.error('Sync failed:', error);
-            alert(t('gdrive.syncFailed'));
+            alert('동기화 중 오류가 발생했습니다. API 키와 Client ID가 올바른지 확인해주세요.');
             setSyncStatus('error');
         }
     }, [
-        isSignedIn, apiKey, driveFileId, localKeywords, localBibleData, localSermons, localLastModified, t,
+        isSignedIn, apiKey, driveFileId, localKeywords, localBibleData, localSermons, localLastModified, 
         findFile, createFile, uploadData, downloadData, 
         setLocalKeywords, setLocalBibleData, setLocalSermons, setLocalLastModified
     ]);
@@ -318,23 +316,23 @@ export const useGoogleDrive = (
     const restoreFromBackup = useCallback(() => {
         const backup = window.localStorage.getItem(BACKUP_KEY);
         if (backup) {
-          if (window.confirm(t('gdrive.backupRestoreConfirm'))) {
+          if (window.confirm('백업을 복원하시겠습니까? 현재 데이터는 백업 데이터로 덮어쓰여집니다.')) {
             try {
               const parsedBackup: DriveData = JSON.parse(backup);
               setLocalKeywords(parsedBackup.keywords || []);
               setLocalBibleData(parsedBackup.bibleData || []);
               setLocalSermons(parsedBackup.sermons || []);
               setLocalLastModified(parsedBackup.lastModified || new Date().toISOString());
-              alert(t('gdrive.backupRestored'));
+              alert('백업이 복원되었습니다.');
             } catch (e) {
-              alert(t('gdrive.backupCorrupted'));
+              alert('백업 파일이 손상되어 복원할 수 없습니다.');
               console.error("Backup restore failed:", e);
             }
           }
         } else {
-          alert(t('gdrive.noBackup'));
+          alert('사용 가능한 백업이 없습니다.');
         }
-      }, [setLocalKeywords, setLocalBibleData, setLocalSermons, setLocalLastModified, t]);
+      }, [setLocalKeywords, setLocalBibleData, setLocalSermons, setLocalLastModified]);
 
     return {
         isSignedIn,

@@ -4,7 +4,6 @@ import { PlusIcon, SearchIcon, XMarkIcon, MicrophoneIcon, PencilIcon } from './i
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { BIBLE_DATA } from '../utils/bibleData';
 import SermonItem from './SermonItem';
-import { useI18n } from '../i18n';
 
 // --- Bible Reference Parsing Logic ---
 const allBooks = [...BIBLE_DATA.oldTestament, ...BIBLE_DATA.newTestament];
@@ -61,7 +60,6 @@ const SermonMode: React.FC<SermonModeProps> = ({
   setIsSidebarOpen,
   useAbbreviation,
 }) => {
-  const { t } = useI18n();
   const [sermonType, setSermonType] = useState<'my' | 'other'>('my');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBook, setSelectedBook] = useLocalStorage<string>('selected-sermon-book', '마태복음');
@@ -130,15 +128,15 @@ const SermonMode: React.FC<SermonModeProps> = ({
 
     const groupedByChapter = forBook.reduce((acc, sermon) => {
         const { chapter } = parseSermonBibleReference(sermon.bibleReference);
-        const key = chapter === 999 ? t('bibleMode.other') : `${chapter}${t('bibleMode.chapterSuffix')}`;
+        const key = chapter === 999 ? "기타" : `${chapter}장`;
         if (!acc[key]) acc[key] = [];
         acc[key].push(sermon);
         return acc;
     }, {} as Record<string, Sermon[]>);
 
     const sortedChapters = Object.keys(groupedByChapter).sort((a, b) => {
-        if (a === t('bibleMode.other')) return 1;
-        if (b === t('bibleMode.other')) return -1;
+        if (a === "기타") return 1;
+        if (b === "기타") return -1;
         return parseInt(a, 10) - parseInt(b, 10);
     });
     
@@ -153,7 +151,7 @@ const SermonMode: React.FC<SermonModeProps> = ({
     });
 
     return finalResult;
-  }, [sermons, sermonType, searchTerm, selectedBook, t]);
+  }, [sermons, sermonType, searchTerm, selectedBook]);
   
   const scrollTo = (ref: React.RefObject<HTMLDivElement>) => {
     ref.current?.scrollIntoView({ block: 'start' });
@@ -178,18 +176,18 @@ const SermonMode: React.FC<SermonModeProps> = ({
       >
         <div className="flex flex-col h-full">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t('sermonMode.sidebarTitle')}</h2>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">설교</h2>
                  <button
                     onClick={onAddSermon}
                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                 >
                     <PlusIcon className="w-4 h-4"/>
-                    <span>{t('sermonMode.addSermon')}</span>
+                    <span>새 설교</span>
                 </button>
                 <button
                     onClick={() => setIsSidebarOpen(false)}
                     className="p-1 text-gray-500 dark:text-gray-400 lg:hidden"
-                    aria-label="Close menu"
+                    aria-label="메뉴 닫기"
                 >
                     <XMarkIcon className="w-6 h-6" />
                 </button>
@@ -203,7 +201,7 @@ const SermonMode: React.FC<SermonModeProps> = ({
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {t('sermonMode.mySermons')}
+                  개인 설교
                 </button>
                 <button
                   onClick={() => setSermonType('other')}
@@ -213,7 +211,7 @@ const SermonMode: React.FC<SermonModeProps> = ({
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
-                  {t('sermonMode.otherSermons')}
+                  타인 설교
                 </button>
             </div>
             <div className="relative mb-2">
@@ -222,22 +220,22 @@ const SermonMode: React.FC<SermonModeProps> = ({
                 </div>
                 <input
                     type="text"
-                    placeholder={t('sermonMode.searchPlaceholder')}
+                    placeholder="전체 설교 검색..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
             </div>
              <div className="flex space-x-2 my-2">
-                <button onClick={() => scrollTo(oldTestamentRef)} className="flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:hover:bg-blue-900">{t('sermonMode.oldTestament')}</button>
-                <button onClick={() => scrollTo(newTestamentRef)} className="flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-200 dark:hover:bg-red-900">{t('sermonMode.newTestament')}</button>
+                <button onClick={() => scrollTo(oldTestamentRef)} className="flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:hover:bg-blue-900">구약</button>
+                <button onClick={() => scrollTo(newTestamentRef)} className="flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-200 dark:hover:bg-red-900">신약</button>
             </div>
             <nav className="flex-grow overflow-y-auto pr-2 -mr-2">
                 <ul className="space-y-1">
                     {mostRecentSermon && (
                         <>
                             <li>
-                                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-2 uppercase tracking-wider">{t('sermonMode.recentWork')}</h3>
+                                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-2 uppercase tracking-wider">최근 작업</h3>
                             </li>
                             <li className="group">
                                 <div className="flex items-center justify-between w-full rounded-md transition-colors text-left text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -257,8 +255,8 @@ const SermonMode: React.FC<SermonModeProps> = ({
                                     <button
                                         onClick={() => onEditSermon(mostRecentSermon)}
                                         className="p-2 mr-1 text-gray-400 group-hover:text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        aria-label={t('sermonMode.editRecentSermon')}
-                                        title={t('sermonMode.editRecentSermon')}
+                                        aria-label="최근 설교 수정"
+                                        title="최근 설교 수정"
                                     >
                                         <PencilIcon className="w-4 h-4" />
                                     </button>
@@ -268,7 +266,7 @@ const SermonMode: React.FC<SermonModeProps> = ({
                         </>
                     )}
                     <div ref={oldTestamentRef}>
-                        <h3 className="text-xl font-bold text-blue-800 dark:text-blue-300 px-3 py-2">{t('sermonMode.oldTestament')}</h3>
+                        <h3 className="text-xl font-bold text-blue-800 dark:text-blue-300 px-3 py-2">구약</h3>
                         {BIBLE_DATA.oldTestament.map(book => (
                             <li key={book.name}>
                                 <button onClick={() => handleBookClick(book.name)} className={`w-full px-3 py-1.5 rounded-md transition-colors text-left ${selectedBook === book.name && !searchTerm ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-200 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'} ${useAbbreviation ? 'text-lg font-bold' : 'text-sm'}`}>
@@ -278,7 +276,7 @@ const SermonMode: React.FC<SermonModeProps> = ({
                         ))}
                     </div>
                     <div className="pt-2" ref={newTestamentRef}>
-                        <h3 className="text-xl font-bold text-red-800 dark:text-red-300 px-3 py-2">{t('sermonMode.newTestament')}</h3>
+                        <h3 className="text-xl font-bold text-red-800 dark:text-red-300 px-3 py-2">신약</h3>
                         {BIBLE_DATA.newTestament.map(book => (
                             <li key={book.name}>
                                 <button onClick={() => handleBookClick(book.name)} className={`w-full px-3 py-1.5 rounded-md transition-colors text-left ${selectedBook === book.name && !searchTerm ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-200 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'} ${useAbbreviation ? 'text-lg font-bold' : 'text-sm'}`}>
@@ -294,7 +292,7 @@ const SermonMode: React.FC<SermonModeProps> = ({
       <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-800/50">
         <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-                {searchTerm ? `'${searchTerm}'` : selectedBook}
+                {searchTerm ? `'${searchTerm}' 검색 결과` : selectedBook}
             </h2>
             {groupedAndSortedSermons.length > 0 ? (
                 <div className="space-y-6">
@@ -319,8 +317,8 @@ const SermonMode: React.FC<SermonModeProps> = ({
             ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800/50 rounded-lg shadow-md p-8 min-h-[50vh]">
                     <MicrophoneIcon className="w-16 h-16 mb-4 text-gray-400" />
-                    <h2 className="text-xl font-semibold">{t('sermonMode.noSermonsTitle')}</h2>
-                    <p>{searchTerm ? t('sermonMode.noSermonsBodyWithSearch', { searchTerm }) : t('sermonMode.noSermonsBodyWithoutSearch', { book: selectedBook })}</p>
+                    <h2 className="text-xl font-semibold">설교 자료가 없습니다</h2>
+                    <p>{searchTerm ? `검색어 '${searchTerm}'에 해당하는 설교가 없습니다.` : `${selectedBook}에 대한 설교 자료가 없습니다. '새 설교 추가' 버튼으로 자료를 추가해 보세요.`}</p>
                 </div>
             )}
         </div>
