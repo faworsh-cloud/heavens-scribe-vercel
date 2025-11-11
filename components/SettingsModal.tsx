@@ -145,10 +145,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 )}
                 <div className="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
                   <h4 className="text-md font-medium text-gray-800 dark:text-white mb-2">통합 데이터 관리</h4>
+                  <div className="mt-2 mb-3 p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg flex items-start gap-3">
+                      <InformationCircleIcon className="w-5 h-5 text-blue-500 dark:text-blue-300 mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-blue-700 dark:text-blue-200">
+                          <p className="font-semibold">파일 저장 위치 안내</p>
+                          <p>파일이 저장되는 위치는 웹 브라우저의 설정에 따라 결정됩니다.</p>
+                          <p className="mt-1">
+                              <strong>팁:</strong> 매번 저장 위치를 선택하려면, 브라우저 설정에서 '다운로드 전에 각 파일의 저장 위치 확인' 옵션을 켜주세요.
+                          </p>
+                      </div>
+                  </div>
                   <div className="space-y-2">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                          모든 키워드, 성경, 설교 자료를 하나의 엑셀 파일로 관리합니다.
-                      </p>
                       <button
                           onClick={onDownloadTemplate}
                           className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600"
