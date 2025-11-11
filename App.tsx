@@ -417,13 +417,15 @@ const App: React.FC = () => {
         
         for (const item of importedKeywords) {
           // FIX: The type guard was unsafe for imported data. Using type assertions to safely access properties.
+          // The previous check was prone to errors with strict type settings.
+          // This ensures `item` is a valid object and contains the necessary properties before destructuring.
           if (
             typeof item === 'object' &&
             item !== null &&
             'keyword' in item &&
-            typeof (item as any).keyword === 'string' &&
+            typeof (item as { keyword: unknown }).keyword === 'string' &&
             'materials' in item &&
-            Array.isArray((item as any).materials)
+            Array.isArray((item as { materials: unknown }).materials)
           ) {
             const { keyword, materials } = item as ImportedKeyword;
 
@@ -704,14 +706,13 @@ const App: React.FC = () => {
       case 'sermon':
         return <SermonMode
           sermons={sermons}
-          onUpdateSermons={setSermons}
           onAddSermon={openAddSermonModal}
           onEditSermon={openEditSermonModal}
           onDeleteSermon={handleDeleteSermon}
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           initialSelectedSermonId={selectedSermonId}
-          onSelectSermon={(id) => { setSelectedSermonId(id); setIsSidebarOpen(false); }}
+          useAbbreviation={useAbbreviation}
         />
       case 'hwp':
         return <HwpConvertMode 

@@ -36,6 +36,27 @@
         }
       }
     </script>
+    <style>
+      .highlight-sermon {
+        transition: background-color 0.5s ease-in-out;
+        animation: highlight-animation 2s ease-in-out;
+      }
+      @keyframes highlight-animation {
+        0% { background-color: transparent; }
+        25% { background-color: #bfdbfe; } /* blue-200 */
+        75% { background-color: #bfdbfe; } /* blue-200 */
+        100% { background-color: transparent; }
+      }
+      .dark .highlight-sermon {
+        animation-name: highlight-animation-dark;
+      }
+      @keyframes highlight-animation-dark {
+        0% { background-color: transparent; }
+        25% { background-color: #1e40af; } /* blue-800 */
+        75% { background-color: #1e40af; } /* blue-800 */
+        100% { background-color: transparent; }
+      }
+    </style>
   <script type="importmap">
 {
   "imports": {

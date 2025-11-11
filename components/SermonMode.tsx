@@ -1,17 +1,53 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Sermon } from '../types';
-import { PlusIcon, SearchIcon, PencilIcon, TrashIcon, MicrophoneIcon, XMarkIcon } from './icons';
+import { PlusIcon, SearchIcon, XMarkIcon, MicrophoneIcon } from './icons';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { BIBLE_DATA } from '../utils/bibleData';
+import SermonItem from './SermonItem';
 
+// --- Bible Reference Parsing Logic ---
+const allBooks = [...BIBLE_DATA.oldTestament, ...BIBLE_DATA.newTestament];
+const allBookNamesForRegex = allBooks
+    .flatMap(b => [b.name, b.abbr])
+    .sort((a, b) => b.length - a.length);
+
+const bookNameRegexPart = allBookNamesForRegex.join('|');
+const sermonRefRegex = new RegExp(`^(${bookNameRegexPart})\\s*(\\d+)(?:[:장절편]\\s*(\\d+))?.*`);
+
+interface ParsedRef {
+  book: string | null;
+  chapter: number;
+  verse: number;
+}
+
+function parseSermonBibleReference(ref: string): ParsedRef {
+    const defaultResult = { book: null, chapter: 999, verse: 999 };
+    if (!ref) return defaultResult;
+    
+    const firstRef = ref.trim().split(/[,;]/)[0];
+    const match = firstRef.match(sermonRefRegex);
+    if (!match) return defaultResult;
+
+    const [, bookStr, chapterStr, verseStr] = match;
+    const bookInfo = allBooks.find(b => b.name === bookStr || b.abbr === bookStr);
+
+    return {
+        book: bookInfo ? bookInfo.name : null,
+        chapter: parseInt(chapterStr, 10),
+        verse: verseStr ? parseInt(verseStr, 10) : 0,
+    };
+}
+
+// --- Component ---
 interface SermonModeProps {
   sermons: Sermon[];
-  onUpdateSermons: (sermons: Sermon[]) => void;
   onAddSermon: () => void;
   onEditSermon: (sermon: Sermon) => void;
   onDeleteSermon: (id: string) => void;
   initialSelectedSermonId?: string | null;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (isOpen: boolean) => void;
-  onSelectSermon: (id: string) => void;
+  useAbbreviation: boolean;
 }
 
 const SermonMode: React.FC<SermonModeProps> = ({
@@ -22,75 +58,129 @@ const SermonMode: React.FC<SermonModeProps> = ({
   initialSelectedSermonId,
   isSidebarOpen,
   setIsSidebarOpen,
-  onSelectSermon,
+  useAbbreviation,
 }) => {
   const [sermonType, setSermonType] = useState<'my' | 'other'>('my');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSermonId, setSelectedSermonId] = useState<string | null>(initialSelectedSermonId);
+  const [selectedBook, setSelectedBook] = useLocalStorage<string>('selected-sermon-book', '마태복음');
+  const [scrollToSermonId, setScrollToSermonId] = useState<string | null>(null);
+  const oldTestamentRef = useRef<HTMLDivElement>(null);
+  const newTestamentRef = useRef<HTMLDivElement>(null);
 
+  // Handle navigation from global search
   useEffect(() => {
     if (initialSelectedSermonId) {
-        const sermonExists = sermons.some(s => s.id === initialSelectedSermonId);
-        if (sermonExists) {
-            setSelectedSermonId(initialSelectedSermonId);
+        const sermon = sermons.find(s => s.id === initialSelectedSermonId);
+        if (sermon) {
+            const parsedRef = parseSermonBibleReference(sermon.bibleReference);
+            if (parsedRef.book) {
+                setSelectedBook(parsedRef.book);
+                // Use a timeout to ensure the DOM is updated before scrolling
+                setTimeout(() => setScrollToSermonId(sermon.id), 0);
+            }
         }
     }
-  }, [initialSelectedSermonId, sermons]);
+  }, [initialSelectedSermonId, sermons, setSelectedBook]);
 
-  const filteredSermons = useMemo(() => {
-    return sermons
-      .filter(s => s.type === sermonType)
-      .filter(s => 
-        s.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.preacher.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.bibleReference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.content.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
-  }, [sermons, sermonType, searchTerm]);
-
-  const selectedSermon = useMemo(() => {
-    return sermons.find(s => s.id === selectedSermonId) || null;
-  }, [sermons, selectedSermonId]);
-
-  // Select the first sermon in the list if none is selected
+  // Effect to perform the scroll and highlight
   useEffect(() => {
-    if (!selectedSermonId && filteredSermons.length > 0) {
-      setSelectedSermonId(filteredSermons[0].id);
-    } else if (filteredSermons.length === 0) {
-      setSelectedSermonId(null);
+    if (scrollToSermonId) {
+        const element = document.getElementById(`sermon-${scrollToSermonId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('highlight-sermon');
+            setTimeout(() => {
+                element.classList.remove('highlight-sermon');
+            }, 2000); // Highlight duration
+        }
+        setScrollToSermonId(null); // Reset after scroll attempt
     }
-  }, [filteredSermons, selectedSermonId]);
+  }, [scrollToSermonId]);
+
+  const groupedAndSortedSermons = useMemo(() => {
+    const filtered = sermons
+      .filter(s => s.type === sermonType)
+      .filter(s => {
+          if (!searchTerm) return true;
+          const term = searchTerm.toLowerCase();
+          return s.title.toLowerCase().includes(term) ||
+                 s.preacher.toLowerCase().includes(term) ||
+                 s.bibleReference.toLowerCase().includes(term) ||
+                 s.content.toLowerCase().includes(term)
+      });
+      
+    const forBook = filtered.filter(s => {
+        // If there's a search term, show all results regardless of selected book.
+        // Otherwise, filter by the selected book.
+        if (searchTerm) return true;
+        const parsed = parseSermonBibleReference(s.bibleReference);
+        return parsed.book === selectedBook;
+    });
+
+    const groupedByChapter = forBook.reduce((acc, sermon) => {
+        const { chapter } = parseSermonBibleReference(sermon.bibleReference);
+        const key = chapter === 999 ? "기타" : `${chapter}장`;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(sermon);
+        return acc;
+    }, {} as Record<string, Sermon[]>);
+
+    const sortedChapters = Object.keys(groupedByChapter).sort((a, b) => {
+        if (a === "기타") return 1;
+        if (b === "기타") return -1;
+        return parseInt(a, 10) - parseInt(b, 10);
+    });
+    
+    const finalResult: [string, Sermon[]][] = sortedChapters.map(chapterKey => {
+        const sermonsInChapter = groupedByChapter[chapterKey];
+        sermonsInChapter.sort((a, b) => {
+            const verseA = parseSermonBibleReference(a.bibleReference).verse;
+            const verseB = parseSermonBibleReference(b.bibleReference).verse;
+            return verseA - verseB;
+        });
+        return [chapterKey, sermonsInChapter];
+    });
+
+    return finalResult;
+  }, [sermons, sermonType, searchTerm, selectedBook]);
+  
+  const scrollTo = (ref: React.RefObject<HTMLDivElement>) => {
+    ref.current?.scrollIntoView({ block: 'start' });
+  };
+  
+  const handleBookClick = (bookName: string) => {
+    setSelectedBook(bookName);
+    setSearchTerm(''); // Clear search when a book is clicked
+    setIsSidebarOpen(false);
+  };
 
   return (
     <div className="flex flex-1 overflow-hidden">
       <div
-        className={`fixed inset-0 bg-black/60 z-30 lg:hidden ${
-          isSidebarOpen ? 'block' : 'hidden'
-        }`}
+        className={`fixed inset-0 bg-black/60 z-30 lg:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
         onClick={() => setIsSidebarOpen(false)}
       />
       <aside
-        className={`fixed top-0 left-0 w-4/5 max-w-sm h-full bg-gray-100 dark:bg-gray-900 z-40 transform transition-transform duration-300 ease-in-out p-4 flex flex-col
-                         lg:relative lg:w-1/3 lg:translate-x-0 lg:flex-shrink-0
+        className={`fixed top-0 left-0 w-4/5 max-w-xs h-full bg-white dark:bg-gray-800 z-40 transform transition-transform duration-300 ease-in-out p-4 flex-shrink-0 shadow-lg
+                         lg:relative lg:w-1/4 lg:h-auto lg:translate-x-0 lg:shadow-md lg:dark:bg-gray-800/50
                          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <button
-          onClick={() => setIsSidebarOpen(false)}
-          className="absolute top-3 right-3 p-1 text-gray-500 dark:text-gray-400 lg:hidden"
-          aria-label="메뉴 닫기"
-        >
-          <XMarkIcon className="w-6 h-6" />
-        </button>
-        <div className="flex-shrink-0">
+        <div className="flex flex-col h-full">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white">설교 자료</h2>
-                <button
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white">설교</h2>
+                 <button
                     onClick={onAddSermon}
                     className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                 >
                     <PlusIcon className="w-4 h-4"/>
-                    <span>새 설교 추가</span>
+                    <span>새 설교</span>
+                </button>
+                <button
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="p-1 text-gray-500 dark:text-gray-400 lg:hidden"
+                    aria-label="메뉴 닫기"
+                >
+                    <XMarkIcon className="w-6 h-6" />
                 </button>
             </div>
             <div className="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 p-1 rounded-lg mb-4">
@@ -121,70 +211,75 @@ const SermonMode: React.FC<SermonModeProps> = ({
                 </div>
                 <input
                     type="text"
-                    placeholder="제목, 설교자, 내용 검색..."
+                    placeholder="전체 설교 검색..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
             </div>
-        </div>
-        <div className="flex-grow overflow-y-auto pr-2 -mr-2 mt-4">
-            <ul className="space-y-2">
-                {filteredSermons.map(sermon => (
-                    <li key={sermon.id}>
-                        <button
-                            onClick={() => onSelectSermon(sermon.id)}
-                            className={`w-full text-left p-3 rounded-md transition-colors ${
-                                selectedSermonId === sermon.id
-                                ? 'bg-primary-100 dark:bg-primary-900/50'
-                                : 'bg-white dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700'
-                            }`}
-                        >
-                            <p className="font-semibold text-gray-800 dark:text-primary-200 truncate">{sermon.title}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{sermon.preacher}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{sermon.date}</p>
-                        </button>
-                    </li>
-                ))}
-            </ul>
+             <div className="flex space-x-2 my-2">
+                <button onClick={() => scrollTo(oldTestamentRef)} className="flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-200 dark:hover:bg-blue-900">구약</button>
+                <button onClick={() => scrollTo(newTestamentRef)} className="flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition-colors bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-200 dark:hover:bg-red-900">신약</button>
+            </div>
+            <nav className="flex-grow overflow-y-auto pr-2 -mr-2">
+                <ul className="space-y-1">
+                    <div ref={oldTestamentRef}>
+                        <h3 className="text-xl font-bold text-blue-800 dark:text-blue-300 px-3 py-2">구약</h3>
+                        {BIBLE_DATA.oldTestament.map(book => (
+                            <li key={book.name}>
+                                <button onClick={() => handleBookClick(book.name)} className={`w-full px-3 py-1.5 rounded-md transition-colors text-left ${selectedBook === book.name && !searchTerm ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-200 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'} ${useAbbreviation ? 'text-lg font-bold' : 'text-sm'}`}>
+                                    {useAbbreviation ? book.abbr : book.name}
+                                </button>
+                            </li>
+                        ))}
+                    </div>
+                    <div className="pt-2" ref={newTestamentRef}>
+                        <h3 className="text-xl font-bold text-red-800 dark:text-red-300 px-3 py-2">신약</h3>
+                        {BIBLE_DATA.newTestament.map(book => (
+                            <li key={book.name}>
+                                <button onClick={() => handleBookClick(book.name)} className={`w-full px-3 py-1.5 rounded-md transition-colors text-left ${selectedBook === book.name && !searchTerm ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-200 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'} ${useAbbreviation ? 'text-lg font-bold' : 'text-sm'}`}>
+                                    {useAbbreviation ? book.abbr : book.name}
+                                </button>
+                            </li>
+                        ))}
+                    </div>
+                </ul>
+            </nav>
         </div>
       </aside>
       <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-800/50">
-        {selectedSermon ? (
-          <div className="max-w-4xl mx-auto h-full flex flex-col">
-            <div className="flex-shrink-0 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h2 className="text-3xl font-bold text-gray-800 dark:text-white">{selectedSermon.title}</h2>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            <span>{selectedSermon.preacher}</span>
-                            <span>|</span>
-                            <span>{selectedSermon.date}</span>
-                             <span>|</span>
-                            <span>{selectedSermon.bibleReference}</span>
+        <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+                {searchTerm ? `'${searchTerm}' 검색 결과` : selectedBook}
+            </h2>
+            {groupedAndSortedSermons.length > 0 ? (
+                <div className="space-y-6">
+                    {groupedAndSortedSermons.map(([chapterKey, sermonsInChapter]) => (
+                        <div key={chapterKey}>
+                            <h3 className="text-2xl font-bold text-gray-700 dark:text-gray-200 mb-4 sticky top-0 bg-gray-50 dark:bg-gray-800/50 py-2 -my-2 z-10 border-b-2 border-primary-200 dark:border-primary-800">
+                                {chapterKey}
+                            </h3>
+                            <div className="space-y-4">
+                                {sermonsInChapter.map(sermon => (
+                                    <SermonItem
+                                        key={sermon.id}
+                                        sermon={sermon}
+                                        onEdit={onEditSermon}
+                                        onDelete={onDeleteSermon}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex space-x-2">
-                        <button onClick={() => onEditSermon(selectedSermon)} className="p-2 text-gray-500 hover:text-primary-500 dark:hover:text-primary-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-                            <PencilIcon className="w-5 h-5"/>
-                        </button>
-                        <button onClick={() => onDeleteSermon(selectedSermon.id)} className="p-2 text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-                            <TrashIcon className="w-5 h-5"/>
-                        </button>
-                    </div>
+                    ))}
                 </div>
-            </div>
-            <div className="prose prose-base dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 whitespace-pre-wrap flex-grow overflow-y-auto">
-                {selectedSermon.content}
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800/50 rounded-lg shadow-md p-8">
-            <MicrophoneIcon className="w-16 h-16 mb-4 text-gray-400" />
-            <h2 className="text-xl font-semibold">설교를 선택하세요</h2>
-            <p>왼쪽 목록에서 설교를 선택하여 내용을 보거나 새 설교를 추가하세요.</p>
-          </div>
-        )}
+            ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800/50 rounded-lg shadow-md p-8 min-h-[50vh]">
+                    <MicrophoneIcon className="w-16 h-16 mb-4 text-gray-400" />
+                    <h2 className="text-xl font-semibold">설교 자료가 없습니다</h2>
+                    <p>{searchTerm ? `검색어 '${searchTerm}'에 해당하는 설교가 없습니다.` : `${selectedBook}에 대한 설교 자료가 없습니다. '새 설교 추가' 버튼으로 자료를 추가해 보세요.`}</p>
+                </div>
+            )}
+        </div>
       </main>
     </div>
   );
