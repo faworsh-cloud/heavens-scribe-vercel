@@ -1,80 +1,42 @@
 import { Keyword, BibleMaterialLocation, Sermon, Material } from '../types';
 import { BIBLE_DATA } from './bibleData';
 
-// FIX: Add type definitions for the File System Access API to the global scope.
-// This resolves TypeScript errors for `window.showSaveFilePicker`, which is not yet
-// part of the standard DOM library types.
-declare global {
-    interface FilePickerAcceptType {
-      description?: string;
-      accept: Record<string, string | string[]>;
-    }
-  
-    interface SaveFilePickerOptions {
-      suggestedName?: string;
-      types?: FilePickerAcceptType[];
-    }
-  
-    interface FileSystemFileHandle {
-      createWritable(): Promise<FileSystemWritableFileStream>;
-    }
-  
-    interface FileSystemWritableFileStream {
-      write(data: Blob): Promise<void>;
-      close(): Promise<void>;
-    }
-  
-    interface Window {
-      showSaveFilePicker(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
-    }
-}
-
 declare const XLSX: any;
 
-const getTimestamp = (): string => {
-    const now = new Date();
-    return `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
-};
-
 const saveWorkbook = async (wb: any, fileName: string) => {
-    // Exclusively use the File System Access API to allow folder selection.
-    if (!window.showSaveFilePicker) {
-        alert("현재 사용 중인 브라우저에서는 파일 저장 위치를 선택하는 기능을 지원하지 않습니다. Chrome, Edge 등 최신 브라우저를 사용해 주세요.");
-        return;
-    }
-
     try {
-        const handle = await window.showSaveFilePicker({
-            suggestedName: fileName,
-            types: [{
-                description: 'Excel Workbook',
-                accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
-            }],
-        });
+        if ((window as any).showSaveFilePicker) {
+            const handle = await (window as any).showSaveFilePicker({
+                suggestedName: fileName,
+                types: [{
+                    description: 'Excel Workbook',
+                    accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
+                }],
+            });
+            
+            const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
 
-        const wbout = XLSX.write(wb, { bookType: 'array', type: 'array' });
-        const blob = new Blob([wbout], { type: 'application/octet-stream' });
-        
-        const writable = await handle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        
-    } catch (err: any) {
-        // Do not proceed if the user cancels the dialog.
-        if (err.name === 'AbortError') {
-            console.log('File save dialog was cancelled by the user.');
-            return;
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+        } else {
+            // Fallback for browsers that don't support the API
+            XLSX.writeFile(wb, fileName);
         }
-        // Inform the user about other potential errors (e.g., security restrictions).
-        console.error("showSaveFilePicker failed:", err);
-        alert("파일을 저장하는 중 오류가 발생했습니다. 브라우저 보안 설정으로 인해 기능이 차단되었을 수 있습니다. 예를 들어, 다른 웹사이트 내에 삽입된 경우(iframe) 작동하지 않을 수 있습니다.");
+    } catch (err: any) {
+        // Handle user cancellation of the save dialog, which throws an AbortError.
+        if (err.name !== 'AbortError') {
+            console.error("Error saving file:", err);
+            alert("파일을 저장하는 중 오류가 발생했습니다.");
+        }
     }
 };
-
 
 // Private helper to generate a timed filename for updates
 const generateTimedFilename = (originalFilename: string): string => {
-    const timestamp = `_${getTimestamp()}`;
+    const now = new Date();
+    const timestamp = `_${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
     const parts = originalFilename.split('.');
     const extension = parts.pop();
     if (!extension) return `${originalFilename}${timestamp}`; // Handle files without extension
@@ -218,7 +180,7 @@ export const exportAllData = async (keywords: Keyword[], bibleData: BibleMateria
         const wsSermons = createSermonsSheet(sermons);
         XLSX.utils.book_append_sheet(wb, wsSermons, "설교 자료");
 
-        await saveWorkbook(wb, `heavens_scribe_backup_${getTimestamp()}.xlsx`);
+        await saveWorkbook(wb, `heavens_scribe_backup_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch(err) {
         console.error("Error exporting all data:", err);
         alert("데이터를 내보내는 중 오류가 발생했습니다.");
@@ -328,6 +290,7 @@ const importKeywords = (sheet: any[]): Keyword[] => {
         createdAt: new Date().toISOString()
       });
     });
+    // FIX: Added missing `updatedAt` property to align with the `Keyword` type definition.
     return Array.from(keywordsMap.entries()).map(([name, materials]) => ({
       id: crypto.randomUUID(),
       name,
@@ -360,10 +323,12 @@ const importBibleData = (sheet: any[]): BibleMaterialLocation[] => {
         };
 
         if (locationsMap.has(locationKey)) {
+            // FIX: Added logic to update the `updatedAt` timestamp for existing locations.
             const existingLocation = locationsMap.get(locationKey)!;
             existingLocation.materials.push(material);
             existingLocation.updatedAt = new Date().toISOString();
         } else {
+            // FIX: Added missing `updatedAt` property to align with the `BibleMaterialLocation` type definition.
             locationsMap.set(locationKey, {
                 id: crypto.randomUUID(),
                 createdAt: new Date().toISOString(),
@@ -382,6 +347,7 @@ const importBibleData = (sheet: any[]): BibleMaterialLocation[] => {
 
 const importSermons = (sheet: any[]): Sermon[] => {
     return sheet.map(row => {
+        // FIX: Explicitly type `style` to match the `Sermon` interface, resolving the type error.
         const style: 'topic' | 'expository' = row['설교 종류'] === '주제 설교' ? 'topic' : 'expository';
         return {
             id: crypto.randomUUID(),
