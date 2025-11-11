@@ -632,6 +632,9 @@ const App: React.FC = () => {
   }
   
   // FIX: Replace `any` with a specific union type for better type safety.
+  // The 'item' parameter was using 'any', which bypasses type checking. 
+  // By using a specific union type, we leverage TypeScript's type safety.
+  // Additionally, an unsafe cast for 'bible' mode was replaced with a type guard.
   const handleSearchResultClick = (item: Keyword | BibleMaterialLocation | Sermon, type: 'keyword' | 'bible' | 'sermon') => {
       if (type === 'keyword') {
           setMode('keyword');

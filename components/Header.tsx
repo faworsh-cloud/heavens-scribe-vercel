@@ -256,8 +256,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                 </nav>
                 <button
                     onClick={onUpdate}
-                    disabled={!isDataDirty}
-                    className="px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap bg-pink-500 text-white shadow hover:bg-pink-600 disabled:bg-pink-300 dark:disabled:bg-pink-800 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap bg-red-500 text-white shadow hover:bg-red-600"
                     title={isDataDirty ? "변경사항 저장 (Ctrl+S)" : "변경사항이 없습니다"}
                 >
                     저장하기
