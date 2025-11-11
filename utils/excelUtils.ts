@@ -37,43 +37,37 @@ const getTimestamp = (): string => {
 };
 
 const saveWorkbook = async (wb: any, fileName: string) => {
-    // Check if the File System Access API is available
-    if (window.showSaveFilePicker) {
-        try {
-            const handle = await window.showSaveFilePicker({
-                suggestedName: fileName,
-                types: [{
-                    description: 'Excel Workbook',
-                    accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
-                }],
-            });
-
-            const wbout = XLSX.write(wb, { bookType: 'array', type: 'array' });
-            const blob = new Blob([wbout], { type: 'application/octet-stream' });
-            
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-            
-            // Successfully saved with picker
-            return; 
-        } catch (err: any) {
-            // Error could be because the user cancelled the picker.
-            if (err.name === 'AbortError') {
-                console.log('File save picker was cancelled by the user.');
-                return;
-            }
-            // For other errors (like cross-origin iframe), we fall back.
-            console.error("showSaveFilePicker failed, falling back:", err);
-        }
+    // Exclusively use the File System Access API to allow folder selection.
+    if (!window.showSaveFilePicker) {
+        alert("현재 사용 중인 브라우저에서는 파일 저장 위치를 선택하는 기능을 지원하지 않습니다. Chrome, Edge 등 최신 브라우저를 사용해 주세요.");
+        return;
     }
-    
-    // Fallback for browsers that don't support the API or if it failed
+
     try {
-        XLSX.writeFile(wb, fileName);
-    } catch (err) {
-        console.error("Fallback file saving failed:", err);
-        alert("파일을 저장하는 중 오류가 발생했습니다.");
+        const handle = await window.showSaveFilePicker({
+            suggestedName: fileName,
+            types: [{
+                description: 'Excel Workbook',
+                accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
+            }],
+        });
+
+        const wbout = XLSX.write(wb, { bookType: 'array', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/octet-stream' });
+        
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        
+    } catch (err: any) {
+        // Do not proceed if the user cancels the dialog.
+        if (err.name === 'AbortError') {
+            console.log('File save dialog was cancelled by the user.');
+            return;
+        }
+        // Inform the user about other potential errors (e.g., security restrictions).
+        console.error("showSaveFilePicker failed:", err);
+        alert("파일을 저장하는 중 오류가 발생했습니다. 브라우저 보안 설정으로 인해 기능이 차단되었을 수 있습니다. 예를 들어, 다른 웹사이트 내에 삽입된 경우(iframe) 작동하지 않을 수 있습니다.");
     }
 };
 
