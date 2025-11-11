@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Sermon } from '../types';
-import { PlusIcon, SearchIcon, XMarkIcon, MicrophoneIcon } from './icons';
+import { PlusIcon, SearchIcon, XMarkIcon, MicrophoneIcon, PencilIcon } from './icons';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { BIBLE_DATA } from '../utils/bibleData';
 import SermonItem from './SermonItem';
@@ -237,20 +237,30 @@ const SermonMode: React.FC<SermonModeProps> = ({
                             <li>
                                 <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-3 py-2 uppercase tracking-wider">최근 작업</h3>
                             </li>
-                            <li>
-                                <button
-                                    onClick={() => {
-                                        const parsedRef = parseSermonBibleReference(mostRecentSermon.bibleReference);
-                                        if (parsedRef.book) {
-                                            handleBookClick(parsedRef.book);
-                                            setTimeout(() => setScrollToSermonId(mostRecentSermon.id), 0);
-                                        }
-                                    }}
-                                    className="w-full px-3 py-2 rounded-md transition-colors text-left text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                >
-                                    <span className="font-semibold text-sm truncate">{mostRecentSermon.title}</span>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 block truncate">{mostRecentSermon.bibleReference}</span>
-                                </button>
+                            <li className="group">
+                                <div className="flex items-center justify-between w-full rounded-md transition-colors text-left text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <button
+                                        onClick={() => {
+                                            const parsedRef = parseSermonBibleReference(mostRecentSermon.bibleReference);
+                                            if (parsedRef.book) {
+                                                handleBookClick(parsedRef.book);
+                                                setTimeout(() => setScrollToSermonId(mostRecentSermon.id), 0);
+                                            }
+                                        }}
+                                        className="flex-grow px-3 py-2 text-left"
+                                    >
+                                        <span className="font-semibold text-sm truncate block">{mostRecentSermon.title}</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 block truncate">{mostRecentSermon.bibleReference}</span>
+                                    </button>
+                                    <button
+                                        onClick={() => onEditSermon(mostRecentSermon)}
+                                        className="p-2 mr-1 text-gray-400 group-hover:text-primary-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        aria-label="최근 설교 수정"
+                                        title="최근 설교 수정"
+                                    >
+                                        <PencilIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </li>
                             <li className="py-2"><div className="border-t border-dotted border-gray-300 dark:border-gray-600" /></li>
                         </>

@@ -421,13 +421,15 @@ const App: React.FC = () => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
         for (const item of importedKeywords) {
-          // FIX: Simplified the type guard to prevent compiler issues with strict settings.
-          // This ensures `item` is a valid object and contains the necessary properties before destructuring.
+          // FIX: Replaced the unsafe type guard with a safer check for object properties.
+          // This ensures `item` is a valid object with the necessary properties before destructuring.
           if (
             item &&
             typeof item === 'object' &&
-            typeof item.keyword === 'string' &&
-            Array.isArray(item.materials)
+            'keyword' in item &&
+            typeof (item as any).keyword === 'string' &&
+            'materials' in item &&
+            Array.isArray((item as any).materials)
           ) {
             const { keyword, materials } = item as ImportedKeyword;
 
@@ -688,7 +690,6 @@ const App: React.FC = () => {
       case 'keyword':
         return <KeywordMode
           keywords={keywords}
-          setKeywords={setKeywords}
           selectedKeyword={selectedKeyword}
           selectedKeywordId={selectedKeywordId}
           onSelectKeyword={(id) => { setSelectedKeywordId(id); setIsSidebarOpen(false); }}
