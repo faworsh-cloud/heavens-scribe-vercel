@@ -1,3 +1,4 @@
+// 이것은 테스트 주석입니다.
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa' // 1. PWA 플러그인을 불러옵니다.
