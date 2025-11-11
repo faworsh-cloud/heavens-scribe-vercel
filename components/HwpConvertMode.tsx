@@ -207,13 +207,7 @@ ${hwpContent}`;
                 }
             });
 
-            const text = response.text;
-            if (!text || text.trim() === '') {
-                setError("AI가 유효한 응답을 생성하지 못했습니다. 입력 내용을 확인하고 다시 시도해주세요.");
-                setIsLoading(false);
-                return;
-            }
-            const jsonStr = text.trim();
+            const jsonStr = response.text.trim();
             const data = JSON.parse(jsonStr);
             
             let parsedData;
