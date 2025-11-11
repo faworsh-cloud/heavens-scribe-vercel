@@ -72,11 +72,31 @@ const App: React.FC = () => {
   }, [fontSize]);
 
   // Data State
-  const [keywords, setKeywords] = useLocalStorage<Keyword[]>('sermon-prep-keywords', []);
-  const [bibleData, setBibleData] = useLocalStorage<BibleMaterialLocation[]>('sermon-prep-bible', []);
-  const [sermons, setSermons] = useLocalStorage<Sermon[]>('sermon-prep-sermons', []);
+  const [keywords, _setKeywords] = useLocalStorage<Keyword[]>('sermon-prep-keywords', []);
+  const [bibleData, _setBibleData] = useLocalStorage<BibleMaterialLocation[]>('sermon-prep-bible', []);
+  const [sermons, _setSermons] = useLocalStorage<Sermon[]>('sermon-prep-sermons', []);
   const [lastModified, setLastModified] = useLocalStorage('sermon-prep-last-modified', new Date().toISOString());
   const [lastSavedTimestamp, setLastSavedTimestamp] = useLocalStorage<string | null>('sermon-prep-last-saved-ts', null);
+
+  const updateLastModified = useCallback(() => {
+    setLastModified(new Date().toISOString());
+  }, [setLastModified]);
+
+  const setKeywords = useCallback((value: React.SetStateAction<Keyword[]>) => {
+      _setKeywords(value);
+      updateLastModified();
+  }, [_setKeywords, updateLastModified]);
+
+  const setBibleData = useCallback((value: React.SetStateAction<BibleMaterialLocation[]>) => {
+      _setBibleData(value);
+      updateLastModified();
+  }, [_setBibleData, updateLastModified]);
+
+  const setSermons = useCallback((value: React.SetStateAction<Sermon[]>) => {
+      _setSermons(value);
+      updateLastModified();
+  }, [_setSermons, updateLastModified]);
+
 
   // User Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -392,22 +412,23 @@ const App: React.FC = () => {
       setKeywords(currentKeywords => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
+        // FIX: Use a more robust type guard to ensure item and its properties have the correct types before use.
         for (const item of importedKeywords) {
-          // FIX: Refactored to use a positive type guard to improve type inference and avoid errors on 'unknown' types.
           if (
             typeof item === 'object' &&
             item !== null &&
             'keyword' in item &&
-            'materials' in item
+            typeof item.keyword === 'string' &&
+            'materials' in item &&
+            Array.isArray(item.materials)
           ) {
-            // FIX: Removed unnecessary type assertion. The type guard above is sufficient.
             const { keyword, materials } = item;
 
-            if (typeof keyword !== 'string' || !keyword) {
+            if (!keyword) {
               continue;
             }
 
-            const newMaterials = (Array.isArray(materials) ? materials : [])
+            const newMaterials = materials
               .filter(m => typeof m === 'object' && m !== null) // Ensure materials are objects
               .map((m: any) => ({
                 bookTitle: m.bookTitle || '',
@@ -467,19 +488,19 @@ const App: React.FC = () => {
   };
 
   // --- Unified Excel Handlers ---
-  const handleUnifiedExport = useCallback(() => {
+  const handleUnifiedExport = useCallback(async () => {
     if (originalWorkbook && originalFileName) {
-      updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
+      await updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
     } else {
-      exportAllData(keywords, bibleData, sermons);
+      await exportAllData(keywords, bibleData, sermons);
     }
     const now = new Date().toISOString();
     setLastModified(now);
     setLastSavedTimestamp(now);
   }, [originalWorkbook, originalFileName, keywords, bibleData, sermons, setLastModified, setLastSavedTimestamp]);
 
-  const handleDownloadTemplateFile = () => {
-    downloadTemplate();
+  const handleDownloadTemplateFile = async () => {
+    await downloadTemplate();
   };
 
   const handleImportAllData = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -610,7 +631,10 @@ const App: React.FC = () => {
           setSelectedKeywordId(item.id);
       } else if (type === 'bible') {
           setMode('bible');
-          setSelectedBook((item as BibleMaterialLocation).book);
+          // FIX: The original cast was unsafe. Adding a type guard to ensure 'item' is a BibleMaterialLocation.
+          if ('book' in item) {
+            setSelectedBook(item.book);
+          }
       } else if (type === 'sermon') {
           setMode('sermon');
           setSelectedSermonId(item.id);
