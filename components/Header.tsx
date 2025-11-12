@@ -256,8 +256,12 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                 </nav>
                 <button
                     onClick={onUpdate}
-                    className="px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap bg-red-500 text-white shadow hover:bg-red-600"
-                    title={isDataDirty ? "변경사항 저장 (Ctrl+S)" : "변경사항이 없습니다"}
+                    className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap text-white shadow ${
+                        isDataDirty
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-green-500 hover:bg-green-600'
+                    }`}
+                    title={isDataDirty ? "변경사항 저장 (Ctrl+S)" : "모든 변경사항이 저장되었습니다"}
                 >
                     저장하기
                 </button>

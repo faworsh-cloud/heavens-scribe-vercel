@@ -154,7 +154,10 @@ const App: React.FC = () => {
   const [originalFileName, setOriginalFileName] = useState<string | null>(null);
   const isUpdateExport = !!originalWorkbook;
   
-  const isDataDirty = isUpdateExport && lastSavedTimestamp !== null && lastModified > lastSavedTimestamp;
+  const hasData = keywords.length > 0 || bibleData.length > 0 || sermons.length > 0;
+  const isDataDirty = 
+    (lastSavedTimestamp !== null && lastModified > lastSavedTimestamp) ||
+    (lastSavedTimestamp === null && hasData);
 
   // Handle Escape key to close modals
   useEffect(() => {
@@ -456,8 +459,10 @@ const App: React.FC = () => {
             'materials' in item &&
             Array.isArray(item.materials)
           ) {
-            // FIX: Refactored to use safe destructuring with a type assertion after the type guard.
-            const { keyword, materials } = item as ImportedKeyword;
+            // FIX: The type assertion was causing a compilation error.
+            // Since `item` is of type `any` and has been type-guarded,
+            // we can safely destructure without the assertion.
+            const { keyword, materials } = item;
 
             if (!keyword) {
               continue;
@@ -465,7 +470,7 @@ const App: React.FC = () => {
 
             const newMaterials = materials
               .filter(m => typeof m === 'object' && m !== null) // Ensure materials are objects
-              .map((m) => ({
+              .map((m: any) => ({
                 bookTitle: m.bookTitle || '',
                 author: m.author || '',
                 publicationInfo: m.publicationInfo || '',
