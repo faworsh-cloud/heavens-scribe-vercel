@@ -284,10 +284,9 @@ const App: React.FC = () => {
   };
 
   const handleDeleteKeyword = (id: string) => {
-    const remainingKeywords = keywords.filter(k => k.id !== id);
-    setKeywords(remainingKeywords);
-  
+    setKeywords(prev => prev.filter(k => k.id !== id));
     if (selectedKeywordId === id) {
+      const remainingKeywords = keywords.filter(k => k.id !== id);
       setSelectedKeywordId(remainingKeywords.length > 0 ? remainingKeywords[0].id : null);
     }
   };
