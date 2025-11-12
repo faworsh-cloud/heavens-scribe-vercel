@@ -36,7 +36,7 @@ export const useGoogleDrive = (
     const [isBackupAvailable, setIsBackupAvailable] = useState(false);
     const [userProfile, setUserProfile] = useLocalStorage<UserProfile | null>('user-profile', null);
     const signInSuccessCallback = useRef<(() => void) | null>(null);
-    const isDriveInitialized = useRef(false);
+    const isDriveClientInitialized = useRef(false);
 
     useEffect(() => {
         const backup = window.localStorage.getItem(BACKUP_KEY);
@@ -115,6 +115,22 @@ export const useGoogleDrive = (
         }
     }, [clientId, setUserProfile]);
 
+    useEffect(() => {
+        const initClient = async () => {
+            await (window as any).gapi.client.init({
+                apiKey: apiKey,
+                discoveryDocs: [DISCOVERY_DOC],
+            });
+            isDriveClientInitialized.current = true;
+        };
+
+        if (gapiReady && apiKey && !isDriveClientInitialized.current) {
+            initClient().catch(err => {
+                console.error("Error initializing GAPI client:", err);
+            });
+        }
+    }, [gapiReady, apiKey]);
+
 
     const handleSignIn = (onSuccess?: () => void) => {
         if (gsiReady && gapiReady && tokenClient) {
@@ -137,7 +153,7 @@ export const useGoogleDrive = (
             setDriveFileName(null);
             setSyncStatus('idle');
             setUserProfile(null);
-            isDriveInitialized.current = false;
+            isDriveClientInitialized.current = false;
         }
     };
 
@@ -219,22 +235,15 @@ export const useGoogleDrive = (
             alert('Google Drive에 연결되지 않았습니다. 먼저 로그인 해주세요.');
             return;
         }
+
+        if (!isDriveClientInitialized.current) {
+            alert('Google Drive 서비스가 초기화되는 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+
         setSyncStatus('syncing');
 
         try {
-            if (!isDriveInitialized.current) {
-                if (!apiKey) {
-                    alert('Google Drive 동기화를 사용하려면 설정에서 API 키를 입력해야 합니다.');
-                    setSyncStatus('error');
-                    return;
-                }
-                await (window as any).gapi.client.init({
-                    apiKey: apiKey,
-                    discoveryDocs: [DISCOVERY_DOC],
-                });
-                isDriveInitialized.current = true;
-            }
-
             let fileId = driveFileId || await findFile();
 
             if (!fileId) {
