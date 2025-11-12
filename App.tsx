@@ -456,9 +456,8 @@ const App: React.FC = () => {
             'materials' in item &&
             Array.isArray(item.materials)
           ) {
-            // FIX: Replaced destructuring with direct property access to fix a "Spread types may only be created from object types" error.
-            const keyword = item.keyword;
-            const materials = item.materials as Omit<Material, 'id' | 'createdAt'>[];
+            // FIX: Refactored to use safe destructuring with a type assertion after the type guard.
+            const { keyword, materials } = item as ImportedKeyword;
 
             if (!keyword) {
               continue;
@@ -537,6 +536,13 @@ const App: React.FC = () => {
 
   // --- Unified Excel Handlers ---
   const handleUnifiedExport = useCallback(() => {
+    const allMaterials = [...keywords.flatMap(k => k.materials), ...bibleData.flatMap(b => b.materials)];
+    const hasLargeImage = allMaterials.some(m => m.contentImage && m.contentImage.length > 32000);
+
+    if (hasLargeImage) {
+        alert("알림: 일부 이미지의 용량이 커서 엑셀 파일에는 이미지 데이터 대신 안내 문구가 저장됩니다. 앱 내의 이미지 데이터는 그대로 유지됩니다.");
+    }
+    
     if (originalWorkbook && originalFileName) {
       updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
     } else {

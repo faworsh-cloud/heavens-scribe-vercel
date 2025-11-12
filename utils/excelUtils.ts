@@ -23,6 +23,8 @@ declare global {
     }
 }
 
+const MAX_CELL_LENGTH = 32000; // Excel cell character limit is 32,767
+
 
 const getTimestamp = (): string => {
     const now = new Date();
@@ -135,7 +137,9 @@ const createKeywordsSheet = (keywords: Keyword[]) => {
           '출판사항': material.publicationInfo,
           '페이지': material.pages,
           '내용': material.content,
-          '이미지 (base64)': material.contentImage || '',
+          '이미지 (base64)': material.contentImage && material.contentImage.length > MAX_CELL_LENGTH
+            ? '[이미지 용량이 커서 엑셀에 저장되지 않았습니다. 앱에서는 계속 볼 수 있습니다.]'
+            : material.contentImage || '',
         }))
       );
     return XLSX.utils.json_to_sheet(flattenedData, {header: ['키워드', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
@@ -172,7 +176,9 @@ const createBibleSheet = (bibleData: BibleMaterialLocation[]) => {
           '출판사항': material.publicationInfo,
           '페이지': material.pages,
           '내용': material.content,
-          '이미지 (base64)': material.contentImage || '',
+          '이미지 (base64)': material.contentImage && material.contentImage.length > MAX_CELL_LENGTH
+            ? '[이미지 용량이 커서 엑셀에 저장되지 않았습니다. 앱에서는 계속 볼 수 있습니다.]'
+            : material.contentImage || '',
         }))
       );
       return XLSX.utils.json_to_sheet(flattenedData, {header: ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
