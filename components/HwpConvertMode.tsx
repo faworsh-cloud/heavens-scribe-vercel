@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
-import { DocumentArrowRightIcon, ArrowDownTrayIcon, PlusIcon, TrashIcon, Cog6ToothIcon } from './icons';
+import { DocumentArrowRightIcon, ArrowDownTrayIcon, PlusIcon, TrashIcon, Cog6ToothIcon, ArrowUpTrayIcon, XMarkIcon } from './icons';
 import { BibleMaterialLocation, Material, Sermon } from '../types';
 
 declare const XLSX: any;
@@ -14,12 +14,27 @@ interface HwpConvertModeProps {
     onOpenSettings: () => void;
 }
 
+const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            resolve(base64String.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+};
+
 const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApiKey, hwpConversionEnabled, onOpenSettings }) => {
     const [conversionType, setConversionType] = useState<ConversionType>('keyword');
     const [hwpContent, setHwpContent] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [previewData, setPreviewData] = useState<any[] | null>(null);
+    const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+    const [isOcrLoading, setIsOcrLoading] = useState(false);
 
     if (!hwpConversionEnabled) {
         return (
@@ -40,6 +55,76 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
           </div>
         );
       }
+    
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file && file.type.startsWith('image/')) {
+            setUploadedImage(file);
+            if (imagePreviewUrl) {
+                URL.revokeObjectURL(imagePreviewUrl);
+            }
+            setImagePreviewUrl(URL.createObjectURL(file));
+            setHwpContent('');
+            setError(null);
+            setPreviewData(null);
+        } else {
+            setError('이미지 파일(jpg, png 등)을 선택해주세요.');
+        }
+        e.target.value = '';
+    };
+
+    const handleRemoveImage = () => {
+        if (imagePreviewUrl) {
+            URL.revokeObjectURL(imagePreviewUrl);
+        }
+        setUploadedImage(null);
+        setImagePreviewUrl(null);
+    };
+
+    const handleOcr = async () => {
+        if (!uploadedImage) {
+            setError('먼저 이미지 파일을 업로드해주세요.');
+            return;
+        }
+        if (!geminiApiKey) {
+            setError('Gemini API 키가 설정되지 않았습니다. 설정에서 API 키를 입력해주세요.');
+            return;
+        }
+
+        setIsOcrLoading(true);
+        setError(null);
+
+        try {
+            const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+            const base64Data = await blobToBase64(uploadedImage);
+            
+            const imagePart = {
+                inlineData: {
+                    mimeType: uploadedImage.type,
+                    data: base64Data,
+                },
+            };
+
+            const textPart = {
+                text: "Extract all Korean text from the image. Preserve the original line breaks and formatting as much as possible."
+            };
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: { parts: [imagePart, textPart] },
+            });
+
+            const extractedText = response.text;
+            setHwpContent(extractedText);
+
+        } catch (e) {
+            console.error("OCR failed:", e);
+            setError("이미지에서 텍스트를 추출하는 데 실패했습니다. 다른 이미지를 시도하거나 직접 내용을 입력해주세요.");
+        } finally {
+            setIsOcrLoading(false);
+        }
+    };
+
 
     const handleConvert = async () => {
         if (!geminiApiKey) {
@@ -258,6 +343,7 @@ ${hwpContent}`;
             }
             setPreviewData(parsedData);
             setHwpContent('');
+            handleRemoveImage();
 
         } catch (e) {
             console.error("Conversion failed:", e);
@@ -499,7 +585,7 @@ ${hwpContent}`;
                 <div className="text-center mb-6">
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white">HWP 자료 자동 변환</h1>
                     <p className="mt-2 text-gray-600 dark:text-gray-400">
-                        변환할 자료 유형을 선택하고 내용을 붙여넣으면 AI가 앱 형식에 맞게 정리합니다.
+                        변환할 자료 유형을 선택하고 내용을 붙여넣거나 이미지를 업로드하면 AI가 앱 형식에 맞게 정리합니다.
                     </p>
                 </div>
 
@@ -518,7 +604,7 @@ ${hwpContent}`;
                          <div className="flex items-center space-x-1 bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
                             <button
                                 onClick={() => setConversionType('keyword')}
-                                disabled={isLoading}
+                                disabled={isLoading || isOcrLoading}
                                 className={`flex-1 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
                                     conversionType === 'keyword'
                                     ? 'bg-white dark:bg-gray-900 text-primary-600 dark:text-primary-300 shadow'
@@ -529,7 +615,7 @@ ${hwpContent}`;
                             </button>
                             <button
                                 onClick={() => setConversionType('bible')}
-                                disabled={isLoading}
+                                disabled={isLoading || isOcrLoading}
                                 className={`flex-1 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
                                     conversionType === 'bible'
                                     ? 'bg-white dark:bg-gray-900 text-primary-600 dark:text-primary-300 shadow'
@@ -540,7 +626,7 @@ ${hwpContent}`;
                             </button>
                             <button
                                 onClick={() => setConversionType('sermon')}
-                                disabled={isLoading}
+                                disabled={isLoading || isOcrLoading}
                                 className={`flex-1 px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${
                                     conversionType === 'sermon'
                                     ? 'bg-white dark:bg-gray-900 text-primary-600 dark:text-primary-300 shadow'
@@ -551,41 +637,88 @@ ${hwpContent}`;
                             </button>
                         </div>
                     </div>
-                    <div>
-                        <label htmlFor="hwp-content" className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                           2. 내용 붙여넣기
+                     <div>
+                        <label className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+                           2. 내용 입력 (텍스트 붙여넣기 또는 이미지 업로드)
                         </label>
-                        <textarea
-                            id="hwp-content"
-                            rows={15}
-                            className="w-full p-3 border rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            placeholder={getPlaceholderText()}
-                            value={hwpContent}
-                            onChange={(e) => setHwpContent(e.target.value)}
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div className="mt-4 text-center">
-                        <button
-                            onClick={handleConvert}
-                            disabled={isLoading || !hwpContent.trim()}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 text-lg font-semibold text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? (
-                                <>
-                                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                 </svg>
-                                 <span>변환 중...</span>
-                                </>
-                            ) : (
-                                <>
-                                 <DocumentArrowRightIcon className="w-6 h-6"/>
-                                 <span>변환하기</span>
-                                </>
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="image-upload" className="relative cursor-pointer bg-white dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col justify-center items-center w-full h-32 text-center text-gray-500 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 transition-colors">
+                                    <ArrowUpTrayIcon className="w-8 h-8 mx-auto mb-2"/>
+                                    <span className="font-semibold">이미지 파일 선택</span>
+                                    <span className="text-xs">또는 파일을 여기로 드래그하세요</span>
+                                    <input id="image-upload" name="image-upload" type="file" className="sr-only" accept="image/*" onChange={handleImageSelect} disabled={isLoading || isOcrLoading} />
+                                </label>
+                            </div>
+
+                            {imagePreviewUrl && (
+                                <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-900/50">
+                                    <p className="text-sm font-semibold mb-2">업로드된 이미지:</p>
+                                    <div className="relative group max-w-sm mx-auto">
+                                        <img src={imagePreviewUrl} alt="Preview" className="rounded-md max-h-60 w-auto mx-auto" />
+                                        <button onClick={handleRemoveImage} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" aria-label="이미지 제거">
+                                            <XMarkIcon className="w-4 h-4"/>
+                                        </button>
+                                    </div>
+                                    <div className="mt-4 text-center">
+                                        <button
+                                            onClick={handleOcr}
+                                            disabled={isOcrLoading}
+                                            className="inline-flex items-center justify-center gap-2 px-6 py-2 text-md font-semibold text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                                        >
+                                            {isOcrLoading ? (
+                                                <>
+                                                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    <span>텍스트 추출 중...</span>
+                                                </>
+                                            ) : (
+                                                <span>이미지에서 텍스트 추출</span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
                             )}
-                        </button>
+                            
+                            <textarea
+                                id="hwp-content"
+                                rows={15}
+                                className="w-full p-3 border rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                placeholder={getPlaceholderText()}
+                                value={hwpContent}
+                                onChange={(e) => setHwpContent(e.target.value)}
+                                disabled={isLoading || isOcrLoading}
+                            />
+                        </div>
+                    </div>
+                    <div className="mt-4">
+                        <label className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            3. 변환하기
+                        </label>
+                        <div className="text-center">
+                            <button
+                                onClick={handleConvert}
+                                disabled={isLoading || isOcrLoading || !hwpContent.trim()}
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 text-lg font-semibold text-white bg-primary-600 border border-transparent rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isLoading ? (
+                                    <>
+                                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                     </svg>
+                                     <span>변환 중...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                     <DocumentArrowRightIcon className="w-6 h-6"/>
+                                     <span>변환하기</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
