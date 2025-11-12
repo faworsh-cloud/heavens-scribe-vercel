@@ -131,7 +131,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 {isImportBackupAvailable ? (
                     <>
                         <p className="text-sm text-gray-700 dark:text-gray-300">
-                            HWP 변환을 통해 마지막으로 가져온 데이터를 되돌릴 수 있습니다.
+                            데이터를 잘못 가져온 경우, 가장 최근에 가져오기 전 상태로 복원할 수 있습니다.
                         </p>
                         <button 
                             onClick={onRestoreFromImportBackup} 
