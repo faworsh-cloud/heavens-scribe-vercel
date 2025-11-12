@@ -1,4 +1,4 @@
-import { useState, useEffect, Dispatch, SetStateAction } from 'react';
+import { useState, useEffect, Dispatch, SetStateAction, useCallback } from 'react';
 
 export const useLocalStorage = <T,>(key: string, initialValue: T): [T, Dispatch<SetStateAction<T>>] => {
   const [storedValue, setStoredValue] = useState<T>(() => {
@@ -11,19 +11,18 @@ export const useLocalStorage = <T,>(key: string, initialValue: T): [T, Dispatch<
     }
   });
 
-  const setValue = (value: T | ((val: T) => T)) => {
-    const previousValue = storedValue;
-    try {
-      const valueToStore = value instanceof Function ? value(previousValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error("Local storage save error:", error);
-      // Revert state on error to keep UI consistent with storage
-      setStoredValue(previousValue);
-      throw error; // Re-throw the error to be handled by the caller
-    }
-  };
+  const setValue = useCallback((value: T | ((val: T) => T)) => {
+    setStoredValue(prevValue => {
+      try {
+        const valueToStore = value instanceof Function ? value(prevValue) : value;
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        return valueToStore;
+      } catch (error) {
+        console.error("Local storage save error:", error);
+        return prevValue; // On error, revert to the previous value
+      }
+    });
+  }, [key]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
