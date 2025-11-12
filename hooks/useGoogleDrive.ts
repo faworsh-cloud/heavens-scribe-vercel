@@ -241,7 +241,9 @@ export const useGoogleDrive = (
     }, []);
     
     const syncData = useCallback(async () => {
-        if (!isSignedIn) {
+        // Fix: Check GAPI token directly to avoid race condition with React state
+        const token = (window as any).gapi?.client?.getToken?.();
+        if (!isSignedIn && !token) {
             alert('Google Drive에 연결되지 않았습니다. 먼저 로그인 해주세요.');
             return;
         }
