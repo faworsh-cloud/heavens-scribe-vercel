@@ -23,77 +23,83 @@ const GoogleApiGuideModal: React.FC<GoogleApiGuideModalProps> = ({ isOpen, onClo
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 z-10">
           <XMarkIcon className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white flex-shrink-0">Google API 키 및 클라이언트 ID 발급 안내</h2>
+        <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white flex-shrink-0">Google Drive 동기화 설정 안내</h2>
         <div className="prose prose-sm dark:prose-invert max-w-none flex-grow overflow-y-auto pr-4 -mr-4">
-            <p>
-                Google Drive 동기화 기능을 사용하려면 Google Cloud에서 <strong>API 키</strong>와 <strong>OAuth 2.0 클라이언트 ID</strong>를 발급받아 설정에 입력해야 합니다.
-                과정이 복잡해 보일 수 있지만, 아래 단계를 차근차근 따라하면 누구나 설정할 수 있습니다.
+            <p className="lead">
+                Google Drive 동기화는 데이터를 안전하게 백업하고 여러 기기에서 접근할 수 있는 강력한 기능입니다.
+                이 기능을 사용하려면, Google에 이 앱이 사용자의 Drive 파일에 접근해도 된다는 허락을 받아야 합니다.
+                아래 안내에 따라 두 가지 종류의 <strong>'인증 코드' (API 키, OAuth 클라이언트 ID)</strong>를 발급받아 설정에 입력해주세요.
+                과정이 조금 길지만, 차근차근 따라하시면 누구나 쉽게 설정할 수 있습니다.
             </p>
 
-            <h4>1단계: Google Cloud Console 접속 및 프로젝트 생성</h4>
+            <h4>1단계: Google Cloud 프로젝트 만들기 (작업 공간 생성)</h4>
             <ol>
-                <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud Console</a>에 접속하여 Google 계정으로 로그인합니다.</li>
-                <li>화면 상단의 프로젝트 선택 드롭다운(페이지 좌측 상단 Google Cloud 로고 옆)을 클릭하고 '새 프로젝트'를 선택합니다.</li>
-                <li>프로젝트 이름을 'Heaven's scribe' 등으로 지정하고 '만들기'를 클릭합니다.</li>
+                <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud 웹사이트</a>에 접속하여 Google 계정으로 로그인합니다.</li>
+                <li>화면 왼쪽 위에 있는 <strong>[프로젝트 선택]</strong> 드롭다운 (Google Cloud 로고 옆)을 클릭하고, <strong>[새 프로젝트]</strong>를 선택합니다.</li>
+                <li>프로젝트 이름을 <code>My Sermon Notes</code> 와 같이 알기 쉽게 입력하고 <strong>[만들기]</strong> 버튼을 클릭합니다.</li>
             </ol>
 
-            <h4>2단계: Google Drive API 활성화</h4>
+            <h4>2단계: Google Drive 기능 켜기</h4>
             <ol>
-                <li>방금 만든 프로젝트가 선택된 상태인지 확인합니다.</li>
-                <li>왼쪽 탐색 메뉴에서 'API 및 서비스' &gt; '라이브러리'로 이동합니다.</li>
-                <li>검색창에 'Google Drive API'를 검색하고 결과에서 선택합니다.</li>
-                <li>'사용 설정' 버튼을 클릭하여 API를 활성화합니다.</li>
+                <li>방금 만든 프로젝트가 선택되었는지 확인합니다. (화면 상단에서 프로젝트 이름 확인)</li>
+                <li>왼쪽 메뉴에서 <strong>[API 및 서비스]</strong> &gt; <strong>[라이브러리]</strong>로 이동합니다. (메뉴가 안 보이면 왼쪽 위 햄버거 메뉴(☰)를 클릭하세요.)</li>
+                <li>검색창에 <code>Google Drive API</code>를 검색하고 결과에서 선택합니다.</li>
+                <li><strong>[사용 설정]</strong> 버튼을 클릭하여 이 앱이 Google Drive와 통신할 수 있도록 허용합니다.</li>
             </ol>
 
-            <h4>3단계: API 키 생성</h4>
+            <h4>3단계: 첫 번째 인증 코드 (API 키) 만들기</h4>
             <ol>
-                <li>왼쪽 메뉴에서 'API 및 서비스' &gt; '사용자 인증 정보'로 이동합니다.</li>
-                <li>화면 상단의 '+ 사용자 인증 정보 만들기'를 클릭하고 'API 키'를 선택합니다.</li>
-                <li>API 키가 생성되면 표시되는 '내 API 키' 값을 복사하여 앱 설정의 'API 키' 필드에 붙여넣습니다. <strong>이 창을 아직 닫지 마세요.</strong></li>
-                <li>보안 강화를 위해, 생성된 키 목록에서 방금 만든 API 키를 클릭하여 수정 화면으로 들어갑니다.</li>
-                <li>'애플리케이션 제한사항'에서 '웹사이트'를 선택합니다.</li>
-                <li>'웹사이트 제한사항' 섹션에서 '+ 항목 추가'를 클릭하고, 다음 값을 입력 후 '완료'를 누릅니다:
+                <li>왼쪽 메뉴에서 <strong>[API 및 서비스]</strong> &gt; <strong>[사용자 인증 정보]</strong>로 이동합니다.</li>
+                <li>화면 상단의 <strong>[+ 사용자 인증 정보 만들기]</strong>를 클릭하고 <strong>[API 키]</strong>를 선택합니다.</li>
+                <li>API 키가 생성되면 팝업창에 표시된 키 옆의 복사 아이콘을 눌러 복사한 뒤, <strong>이 앱의 설정 창에 있는 'API 키' 필드에 붙여넣습니다.</strong> 팝업창은 '닫기'를 눌러 닫습니다.</li>
+                <li>이제 방금 만든 API 키를 이 앱에서만 사용할 수 있도록 보안 설정을 합니다. 'API 키' 목록에서 방금 만든 키의 이름을 클릭합니다.</li>
+                <li>'애플리케이션 제한사항' 섹션에서 <strong>[웹사이트]</strong>를 선택합니다.</li>
+                <li>'웹사이트 제한사항' 아래의 <strong>[+ 항목 추가]</strong> 버튼을 클릭하고, 아래의 주소를 입력합니다. (복사해서 붙여넣으세요)
                     <br />
-                    <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-red-600">{origin}</code>
+                    <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-red-600 select-all">{origin}</code>
                 </li>
-                 <li>'저장' 버튼을 클릭합니다.</li>
+                 <li>페이지 하단의 <strong>[저장]</strong> 버튼을 클릭합니다.</li>
             </ol>
 
-            <h4>4단계: OAuth 2.0 클라이언트 ID 생성</h4>
+            <h4>4단계: 두 번째 인증 코드 (OAuth 클라이언트 ID) 만들기</h4>
+            <p>이 코드는 사용자가 "이 앱이 내 Google Drive를 사용하도록 허락합니다"라고 승인할 때 필요합니다.</p>
             <ol>
-                <li>먼저 OAuth 동의 화면을 설정해야 합니다. 왼쪽 메뉴에서 'OAuth 동의 화면'으로 이동합니다.</li>
-                <li>'User Type'은 '외부'를 선택하고 '만들기'를 클릭합니다.</li>
-                <li>다음 정보를 입력합니다:
+                <li><strong>(앱 정보 등록)</strong> 왼쪽 메뉴에서 <strong>[OAuth 동의 화면]</strong>으로 이동합니다.
                     <ul>
-                        <li><strong>앱 이름:</strong> Heaven's scribe (또는 원하는 이름)</li>
-                        <li><strong>사용자 지원 이메일:</strong> 본인의 이메일 주소 선택</li>
-                        <li><strong>개발자 연락처 정보:</strong> 본인의 이메일 주소 입력</li>
+                        <li>'User Type'은 <strong>[외부]</strong>를 선택하고 [만들기]를 클릭합니다.</li>
+                        <li>'앱 정보' 입력:
+                            <ul>
+                                <li><strong>앱 이름:</strong> <code>Heaven's Scribe Sync</code> (또는 원하는 이름)</li>
+                                <li><strong>사용자 지원 이메일:</strong> 본인의 이메일 주소를 선택합니다.</li>
+                                <li><strong>개발자 연락처 정보:</strong> 본인의 이메일 주소를 한 번 더 입력합니다.</li>
+                            </ul>
+                        </li>
+                        <li>페이지 하단의 <strong>[저장 후 계속]</strong>을 클릭합니다. '범위'와 '테스트 사용자' 단계는 변경 없이 <strong>[저장 후 계속]</strong>을 눌러 넘어갑니다.</li>
+                        <li>요약 화면에서 <strong>[대시보드로 돌아가기]</strong>를 클릭합니다.</li>
                     </ul>
-                    하단의 '저장 후 계속'을 클릭합니다.
                 </li>
-                <li>'범위' 단계는 아무것도 추가하지 않고 '저장 후 계속'을 클릭합니다.</li>
-                <li>'테스트 사용자' 단계도 아무것도 추가하지 않고 '저장 후 계속'을 클릭합니다.</li>
-                <li>요약 화면에서 내용을 확인하고 '대시보드로 돌아가기'를 클릭합니다.</li>
-                <li><strong>(중요)</strong> 이제 앱을 게시하여 모든 Google 사용자가 승인할 수 있도록 설정합니다. 'OAuth 동의 화면' 대시보드에서 <strong>'앱 게시'</strong> 버튼을 클릭하고 확인 메시지를 승인합니다. '게시 상태'가 '테스트'에서 '프로덕션'으로 변경됩니다.</li>
-                <li>이제 클라이언트 ID를 생성합니다. 왼쪽 메뉴에서 '사용자 인증 정보'로 다시 이동합니다.</li>
-                <li>'+ 사용자 인증 정보 만들기' &gt; 'OAuth 클라이언트 ID'를 선택합니다.</li>
-                <li>다음 정보를 입력/선택합니다:
+                <li className="font-bold text-red-600 dark:text-red-400"><strong>(가장 중요!)</strong> 이제 다른 사람이 아닌 본인만 사용하도록 제한된 "테스트 모드"를 해제합니다. 'OAuth 동의 화면' 대시보드에서 <strong>[앱 게시]</strong> 버튼을 찾아 클릭하고, 확인 팝업에서 <strong>[확인]</strong>을 누릅니다. '게시 상태'가 '프로덕션'으로 변경됩니다.</li>
+                <li><strong>(클라이언트 ID 생성)</strong> 왼쪽 메뉴에서 <strong>[사용자 인증 정보]</strong>로 다시 이동합니다.</li>
+                <li><strong>[+ 사용자 인증 정보 만들기]</strong> &gt; <strong>[OAuth 클라이언트 ID]</strong>를 선택합니다.</li>
+                <li>아래와 같이 설정합니다:
                     <ul>
                         <li><strong>애플리케이션 유형:</strong> 웹 애플리케이션</li>
-                        <li><strong>이름:</strong> Heaven's scribe Web Client (또는 원하는 이름)</li>
-                        <li><strong>승인된 자바스크립트 원본:</strong> '+ URI 추가'를 클릭하고 다음 값을 입력합니다:
+                        <li><strong>이름:</strong> <code>Heaven's Scribe Web Client</code> (자동으로 채워지거나 원하는 대로 입력)</li>
+                        <li><strong>승인된 자바스크립트 원본:</strong> [+ URI 추가]를 클릭하고 3단계에서 사용했던 아래 주소를 다시 입력합니다.
                             <br/>
-                            <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-red-600">{origin}</code>
+                            <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-red-600 select-all">{origin}</code>
                         </li>
                     </ul>
                 </li>
-                <li>'만들기' 버튼을 클릭합니다.</li>
-                <li>생성된 '클라이언트 ID' 값을 복사하여 앱 설정의 '클라이언트 ID' 필드에 붙여넣습니다.</li>
+                <li><strong>[만들기]</strong> 버튼을 클릭합니다.</li>
+                <li>생성된 <strong>'클라이언트 ID'</strong> 값을 복사하여 이 앱의 설정 창에 있는 <strong>'클라이언트 ID' 필드에 붙여넣습니다.</strong></li>
             </ol>
 
-            <h4>5단계: 설정 완료</h4>
+            <h4>5단계: 설정 완료 및 동기화 시작</h4>
             <p>
-                두 값을 모두 설정에 입력한 후, 설정 창을 닫고 'Google Drive에 연결' 버튼을 클릭하여 로그인을 시도하면 동기화 기능이 활성화됩니다.
+                두 개의 인증 코드를 모두 앱 설정에 붙여넣고 <strong>[API 정보 저장]</strong> 버튼을 눌렀다면 모든 준비가 끝났습니다.
+                <br/>
+                설정 창을 닫고, 헤더 또는 설정 창 안에 있는 <strong>[로그인]</strong>이나 <strong>[연결 및 동기화]</strong> 버튼을 눌러 Google 계정으로 로그인하면 동기화가 시작됩니다.
             </p>
         </div>
         <div className="mt-6 flex justify-end flex-shrink-0">

@@ -11,10 +11,6 @@ interface SettingsModalProps {
   setFontSize: (size: FontSize) => void;
   useAbbreviation: boolean;
   setUseAbbreviation: (value: boolean) => void;
-  onSetPin: () => void;
-  pinEnabled: boolean;
-  setPinEnabled: (enabled: boolean) => void;
-  hasPin: boolean;
   apiKey: string;
   setApiKey: (key: string) => void;
   clientId: string;
@@ -58,10 +54,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setFontSize, 
     useAbbreviation, 
     setUseAbbreviation,
-    onSetPin,
-    pinEnabled,
-    setPinEnabled,
-    hasPin,
     apiKey,
     setApiKey,
     clientId,
@@ -219,29 +211,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">성경 목록을 약어(예: 창)로 표시하여 간결하게 봅니다.</p>
               </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-200 dark:border-gray-700"></div>
-
-          {/* Security Settings */}
-           <div>
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">보안</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">사용자 PIN 잠금</span>
-                <button
-                  type="button" onClick={() => setPinEnabled(!pinEnabled)} disabled={!hasPin}
-                  className={`${pinEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-                  role="switch" aria-checked={pinEnabled}
-                >
-                  <span aria-hidden="true" className={`${pinEnabled ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
-                </button>
-              </div>
-               <p className="text-xs text-gray-500 dark:text-gray-400 -mt-2">PIN을 먼저 설정해야 잠금 기능을 사용할 수 있습니다.</p>
-              <button onClick={onSetPin} className="w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600">
-                {hasPin ? '사용자 PIN 변경' : '사용자 PIN 설정'}
-              </button>
             </div>
           </div>
           

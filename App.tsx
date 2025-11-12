@@ -3,7 +3,6 @@ import { Keyword, Material, BibleMaterialLocation, Sermon, Announcement } from '
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useGoogleDrive } from './hooks/useGoogleDrive';
 import { exportAllData, importAllData, downloadTemplate, updateDataAndExport } from './utils/excelUtils';
-import { hashPin, verifyPin } from './utils/auth';
 
 import Header from './components/Header';
 import KeywordMode from './components/KeywordMode';
@@ -17,8 +16,6 @@ import GoogleApiGuideModal from './components/GoogleApiGuideModal';
 import GlobalSearchResults from './components/GlobalSearchResults';
 import UserGuideModal from './components/UserGuideModal';
 import AnnouncementModal from './components/AnnouncementModal';
-import AuthScreen from './components/AuthScreen';
-import PinManagementModal from './components/PinManagementModal';
 
 type AppMode = 'keyword' | 'bible' | 'sermon' | 'search' | 'hwp';
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
@@ -57,18 +54,6 @@ const App: React.FC = () => {
   const [fontSize, setFontSize] = useLocalStorage<FontSize>('font-size', 'base');
   const [useAbbreviation, setUseAbbreviation] = useLocalStorage('use-abbreviation', false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  // Security State
-  const [pinHash, setPinHash] = useLocalStorage<string | null>('app-pin-hash', null);
-  const [pinEnabled, setPinEnabled] = useLocalStorage<boolean>('app-pin-enabled', false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (!pinEnabled || !pinHash) {
-      setIsAuthenticated(true);
-    }
-  }, [pinEnabled, pinHash]);
 
   useEffect(() => {
     const sizeMap = {
@@ -170,7 +155,6 @@ const App: React.FC = () => {
       if (e.key === 'Escape') {
         // Close the top-most/nested modals first
         if (isApiGuideOpen) setIsApiGuideOpen(false);
-        else if (isPinModalOpen) setIsPinModalOpen(false);
         else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
         else if (isUserGuideModalOpen) setIsUserGuideModalOpen(false);
         else if (isAnnouncementModalOpen) setIsAnnouncementModalOpen(false);
@@ -185,7 +169,6 @@ const App: React.FC = () => {
     isSettingsModalOpen, setIsSettingsModalOpen,
     isUserGuideModalOpen, setIsUserGuideModalOpen,
     isAnnouncementModalOpen, setIsAnnouncementModalOpen,
-    isPinModalOpen
   ]);
 
   // Switch to keyword mode if HWP conversion is disabled
@@ -251,26 +234,6 @@ const App: React.FC = () => {
 
   // Google Drive Sync
   const gdrive = useGoogleDrive(apiKey, clientId, keywords, setKeywords, bibleData, setBibleData, sermons, setSermons, lastModified, setLastModified);
-
-    // --- Security Handlers ---
-  const handleSetPin = async (pin: string) => {
-    const hash = await hashPin(pin);
-    setPinHash(hash);
-    setPinEnabled(true);
-    setIsPinModalOpen(false);
-    alert('PIN이 설정되었습니다.');
-  };
-
-  const handleVerifyPin = async (pin: string) => {
-    if (pinHash) {
-      const isValid = await verifyPin(pin, pinHash);
-      if (isValid) {
-        setIsAuthenticated(true);
-      } else {
-        alert('PIN이 올바르지 않습니다.');
-      }
-    }
-  };
 
   // --- Data Handlers ---
 
@@ -622,10 +585,6 @@ const App: React.FC = () => {
       return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUpdateAndExport]);
 
-  if (!isAuthenticated) {
-    return <AuthScreen onPinVerify={handleVerifyPin} />;
-  }
-
   return (
     <div className={`flex flex-col h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100`}>
       <Header
@@ -748,10 +707,6 @@ const App: React.FC = () => {
           setFontSize={setFontSize}
           useAbbreviation={useAbbreviation}
           setUseAbbreviation={setUseAbbreviation}
-          onSetPin={() => setIsPinModalOpen(true)}
-          pinEnabled={pinEnabled}
-          setPinEnabled={setPinEnabled}
-          hasPin={!!pinHash}
           apiKey={apiKey}
           setApiKey={setApiKey}
           clientId={clientId}
@@ -772,7 +727,6 @@ const App: React.FC = () => {
       )}
       {isApiGuideOpen && <GoogleApiGuideModal isOpen={isApiGuideOpen} onClose={() => setIsApiGuideOpen(false)} />}
       {isUserGuideModalOpen && <UserGuideModal isOpen={isUserGuideModalOpen} onClose={() => setIsUserGuideModalOpen(false)} />}
-      {isPinModalOpen && <PinManagementModal isOpen={isPinModalOpen} onClose={() => setIsPinModalOpen(false)} onPinSet={handleSetPin} pinHash={pinHash} />}
       {announcement && isAnnouncementModalOpen && (
         <AnnouncementModal
           isOpen={isAnnouncementModalOpen}
