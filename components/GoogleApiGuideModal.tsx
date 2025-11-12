@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { XMarkIcon } from './icons';
 
 interface GoogleApiGuideModalProps {
@@ -7,15 +7,9 @@ interface GoogleApiGuideModalProps {
 }
 
 const GoogleApiGuideModal: React.FC<GoogleApiGuideModalProps> = ({ isOpen, onClose }) => {
-    const [origin, setOrigin] = useState('');
+    const origin = 'https://heavens-scribe-vercel.vercel.app';
 
-    useEffect(() => {
-        if (isOpen) {
-            setOrigin(window.location.origin);
-        }
-    }, [isOpen]);
-
-  if (!isOpen) return null;
+    if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-[60] flex justify-center items-center p-4">
