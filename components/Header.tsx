@@ -237,7 +237,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                     <SearchIcon className="h-4 w-4 text-gray-400" />
                 </div>
             </form>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center flex-wrap gap-2">
                 <nav className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1 rounded-full">
                     <button onClick={() => setMode('keyword')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'keyword' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
                     키워드

@@ -456,9 +456,9 @@ const App: React.FC = () => {
             'materials' in item &&
             Array.isArray(item.materials)
           ) {
-            // FIX: Destructure item with a type assertion after validation to ensure type safety.
-            // This resolves issues with 'unknown' type and potential spread errors on non-objects.
-            const { keyword, materials } = item as ImportedKeyword;
+            // FIX: Replaced destructuring with direct property access to fix a "Spread types may only be created from object types" error.
+            const keyword = item.keyword;
+            const materials = item.materials as Omit<Material, 'id' | 'createdAt'>[];
 
             if (!keyword) {
               continue;
