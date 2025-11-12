@@ -60,60 +60,58 @@ export const useGoogleDrive = (
     }, []);
 
     useEffect(() => {
-        if (!clientId) {
-            setGsiReady(false);
-            setTokenClient(null);
-            return;
-        }
-
         const script = document.createElement('script');
         script.src = "https://accounts.google.com/gsi/client";
         script.async = true;
         script.defer = true;
-        script.onload = () => {
-            try {
-                const client = (window as any).google.accounts.oauth2.initTokenClient({
-                    client_id: clientId,
-                    scope: SCOPES,
-                    callback: async (tokenResponse: any) => {
-                        if (tokenResponse && tokenResponse.access_token) {
-                            (window as any).gapi.client.setToken({ access_token: tokenResponse.access_token });
-                            setIsSignedIn(true);
-                             try {
-                                const userInfoResponse = await (window as any).gapi.client.request({
-                                    path: 'https://www.googleapis.com/oauth2/v3/userinfo'
-                                });
-                                const profile = userInfoResponse.result;
-                                setUserProfile({
-                                    id: profile.sub,
-                                    name: profile.name,
-                                    email: profile.email,
-                                    picture: profile.picture,
-                                });
-                            } catch (err) {
-                                console.error("Error fetching user info:", err);
-                            }
-                            
-                            if (signInSuccessCallback.current) {
-                                signInSuccessCallback.current();
-                                signInSuccessCallback.current = null; // Use once
-                            }
-                        }
-                    },
-                });
-                setTokenClient(client);
-                setGsiReady(true);
-            } catch (error) {
-                console.error("GSI client init error:", error);
-                setTokenClient(null);
-                setGsiReady(false);
-            }
-        }
+        script.onload = () => setGsiReady(true);
         document.body.appendChild(script);
          return () => {
             document.body.removeChild(script);
         }
-    }, [clientId, setUserProfile]);
+    }, []);
+
+    useEffect(() => {
+        if (!gsiReady || !clientId) {
+            setTokenClient(null);
+            return;
+        }
+        try {
+            const client = (window as any).google.accounts.oauth2.initTokenClient({
+                client_id: clientId,
+                scope: SCOPES,
+                callback: async (tokenResponse: any) => {
+                    if (tokenResponse && tokenResponse.access_token) {
+                        (window as any).gapi.client.setToken({ access_token: tokenResponse.access_token });
+                        setIsSignedIn(true);
+                            try {
+                            const userInfoResponse = await (window as any).gapi.client.request({
+                                path: 'https://www.googleapis.com/oauth2/v3/userinfo'
+                            });
+                            const profile = userInfoResponse.result;
+                            setUserProfile({
+                                id: profile.sub,
+                                name: profile.name,
+                                email: profile.email,
+                                picture: profile.picture,
+                            });
+                        } catch (err) {
+                            console.error("Error fetching user info:", err);
+                        }
+                        
+                        if (signInSuccessCallback.current) {
+                            signInSuccessCallback.current();
+                            signInSuccessCallback.current = null; // Use once
+                        }
+                    }
+                },
+            });
+            setTokenClient(client);
+        } catch (error) {
+            console.error("GSI client init error:", error);
+            setTokenClient(null);
+        }
+    }, [gsiReady, clientId, setUserProfile]);
 
     useEffect(() => {
         const initClient = async () => {
@@ -152,7 +150,7 @@ export const useGoogleDrive = (
         }
     };
     
-    const handleSignOut = () => {
+    const handleSignOut = useCallback(() => {
         const token = (window as any).gapi.client.getToken();
         if (token !== null) {
             (window as any).google.accounts.oauth2.revoke(token.access_token, () => {});
@@ -164,7 +162,7 @@ export const useGoogleDrive = (
             setUserProfile(null);
             isDriveClientInitialized.current = false;
         }
-    };
+    }, [setDriveFileId, setUserProfile]);
 
     const findFile = useCallback(async (): Promise<string | null> => {
         try {
@@ -325,14 +323,19 @@ export const useGoogleDrive = (
                     setSyncStatus('idle');
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Sync failed:', error);
-            alert('동기화 중 오류가 발생했습니다. API 키와 Client ID가 올바른지 확인해주세요.');
+            if (error.result?.error?.code === 401 || error.result?.error?.code === 403) {
+                alert('Google Drive 접근 권한이 없습니다. 다시 로그인해주세요.');
+                handleSignOut(); // Automatically sign out to force re-authentication
+            } else {
+                alert('동기화 중 오류가 발생했습니다. API 키와 Client ID가 올바른지, 인터넷 연결이 정상적인지 확인해주세요.');
+            }
             setSyncStatus('error');
         }
     }, [
         isSignedIn, syncStatus, driveFileId, localKeywords, localBibleData, localSermons, localLastModified, 
-        findFile, createFile, uploadData, downloadData, 
+        findFile, createFile, uploadData, downloadData, handleSignOut,
         setLocalKeywords, setLocalBibleData, setLocalSermons, setLocalLastModified
     ]);
 
@@ -361,7 +364,7 @@ export const useGoogleDrive = (
         isSignedIn,
         syncStatus,
         driveFileName,
-        isReady: gapiReady && gsiReady,
+        isReady: gapiReady && gsiReady && !!tokenClient,
         handleSignIn,
         handleSignOut,
         syncData,
