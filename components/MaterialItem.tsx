@@ -44,11 +44,6 @@ const MaterialItem: React.FC<MaterialItemProps> = ({ material, onEdit, onDelete,
         <p className="text-md font-semibold text-gray-800 dark:text-white mb-2 pr-16">
             {formatCitation(material)}
         </p>
-        {material.contentImage && (
-            <div className="mb-4">
-                <img src={material.contentImage} alt="Material content" className="max-w-full max-h-96 rounded-md object-contain mx-auto" />
-            </div>
-        )}
         {material.content && (
             <div className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
                 {material.content}

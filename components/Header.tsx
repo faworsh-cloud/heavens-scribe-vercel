@@ -254,21 +254,17 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                         </button>
                     )}
                 </nav>
-                <div className="relative">
-                    <button
-                        onClick={onUpdate}
-                        className="px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap text-white shadow bg-primary-600 hover:bg-primary-700"
-                        title="현재 데이터를 새 엑셀 파일로 저장합니다 (Ctrl+S)"
-                    >
-                        파일로 저장
-                    </button>
-                    {isDataDirty && (
-                        <span className="absolute -top-1 -right-1 flex h-3 w-3" title="저장되지 않은 변경사항이 있습니다">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                        </span>
-                    )}
-                </div>
+                <button
+                    onClick={onUpdate}
+                    className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap text-white shadow ${
+                        isDataDirty
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-green-500 hover:bg-green-600'
+                    }`}
+                    title={isDataDirty ? "변경사항 저장 (Ctrl+S)" : "모든 변경사항이 저장되었습니다"}
+                >
+                    저장하기
+                </button>
             </div>
       </div>
     </header>

@@ -129,50 +129,20 @@ function parseSermonBibleReference(ref: string): { bookIndex: number, chapter: n
 const createKeywordsSheet = (keywords: Keyword[]) => {
     const sortedKeywords = [...keywords].sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
     
-    let maxChunks = 1;
-    sortedKeywords.forEach(k => {
-        k.materials.forEach(m => {
-            if (m.contentImage) {
-                const chunks = Math.ceil(m.contentImage.length / MAX_CELL_LENGTH);
-                if (chunks > maxChunks) {
-                    maxChunks = chunks;
-                }
-            }
-        });
-    });
-
-    const headers = ['키워드', '서명', '저자', '출판사항', '페이지', '내용'];
-    for (let i = 1; i <= maxChunks; i++) {
-        headers.push(`이미지_${i}`);
-    }
-
-    const flattenedData = sortedKeywords.flatMap(keyword => {
-        if (keyword.materials.length === 0) {
-            return [{ '키워드': keyword.name }];
-        }
-        return keyword.materials.map(material => {
-            const row: { [key: string]: any } = {
-                '키워드': keyword.name,
-                '서명': material.bookTitle,
-                '저자': material.author,
-                '출판사항': material.publicationInfo,
-                '페이지': material.pages,
-                '내용': material.content,
-            };
-
-            if (material.contentImage) {
-                for (let i = 0; i < maxChunks; i++) {
-                    const chunk = material.contentImage.substring(i * MAX_CELL_LENGTH, (i + 1) * MAX_CELL_LENGTH);
-                    if (chunk) {
-                        row[`이미지_${i + 1}`] = chunk;
-                    }
-                }
-            }
-            return row;
-        });
-    });
-
-    return XLSX.utils.json_to_sheet(flattenedData, { header: headers });
+    const flattenedData = sortedKeywords.flatMap(keyword => 
+        (keyword.materials.length > 0 ? keyword.materials : [{bookTitle: '', author: '', publicationInfo: '', pages: '', content: '', contentImage: null}]).map(material => ({
+          '키워드': keyword.name,
+          '서명': material.bookTitle,
+          '저자': material.author,
+          '출판사항': material.publicationInfo,
+          '페이지': material.pages,
+          '내용': material.content,
+          '이미지 (base64)': material.contentImage && material.contentImage.length > MAX_CELL_LENGTH
+            ? '[이미지 용량이 커서 엑셀에 저장되지 않았습니다. 앱에서는 계속 볼 수 있습니다.]'
+            : material.contentImage || '',
+        }))
+      );
+    return XLSX.utils.json_to_sheet(flattenedData, {header: ['키워드', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
 };
 
 const createBibleSheet = (bibleData: BibleMaterialLocation[]) => {
@@ -194,50 +164,24 @@ const createBibleSheet = (bibleData: BibleMaterialLocation[]) => {
         return verseStartA - verseStartB;
     });
 
-    let maxChunks = 1;
-    sortedBibleData.forEach(loc => {
-        loc.materials.forEach(m => {
-            if (m.contentImage) {
-                const chunks = Math.ceil(m.contentImage.length / MAX_CELL_LENGTH);
-                if (chunks > maxChunks) {
-                    maxChunks = chunks;
-                }
-            }
-        });
-    });
-
-    const headers = ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용'];
-    for (let i = 1; i <= maxChunks; i++) {
-        headers.push(`이미지_${i}`);
-    }
-
     const flattenedData = sortedBibleData.flatMap(location =>
-        location.materials.map(material => {
-            const row: { [key: string]: any } = {
-                '성경': location.book,
-                '시작 장': location.chapterStart,
-                '시작 절': location.verseStart || '',
-                '끝 장': location.chapterEnd || '',
-                '끝 절': location.verseEnd || '',
-                '서명': material.bookTitle,
-                '저자': material.author,
-                '출판사항': material.publicationInfo,
-                '페이지': material.pages,
-                '내용': material.content,
-            };
-
-            if (material.contentImage) {
-                for (let i = 0; i < maxChunks; i++) {
-                    const chunk = material.contentImage.substring(i * MAX_CELL_LENGTH, (i + 1) * MAX_CELL_LENGTH);
-                    if (chunk) {
-                        row[`이미지_${i + 1}`] = chunk;
-                    }
-                }
-            }
-            return row;
-        })
-    );
-    return XLSX.utils.json_to_sheet(flattenedData, { header: headers });
+        location.materials.map(material => ({
+          '성경': location.book,
+          '시작 장': location.chapterStart,
+          '시작 절': location.verseStart || '',
+          '끝 장': location.chapterEnd || '',
+          '끝 절': location.verseEnd || '',
+          '서명': material.bookTitle,
+          '저자': material.author,
+          '출판사항': material.publicationInfo,
+          '페이지': material.pages,
+          '내용': material.content,
+          '이미지 (base64)': material.contentImage && material.contentImage.length > MAX_CELL_LENGTH
+            ? '[이미지 용량이 커서 엑셀에 저장되지 않았습니다. 앱에서는 계속 볼 수 있습니다.]'
+            : material.contentImage || '',
+        }))
+      );
+      return XLSX.utils.json_to_sheet(flattenedData, {header: ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
 };
 
 const createSermonsSheet = (sermons: Sermon[]) => {
@@ -297,10 +241,10 @@ export const updateDataAndExport = (workbook: any, fileName: string, keywords: K
 export const downloadTemplate = () => {
     const wb = XLSX.utils.book_new();
 
-    const keywordSheet = XLSX.utils.json_to_sheet([], {header: ['키워드', '서명', '저자', '출판사항', '페이지', '내용', '이미지_1']});
+    const keywordSheet = XLSX.utils.json_to_sheet([], {header: ['키워드', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
     XLSX.utils.book_append_sheet(wb, keywordSheet, "키워드 자료");
 
-    const bibleSheet = XLSX.utils.json_to_sheet([], {header: ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용', '이미지_1']});
+    const bibleSheet = XLSX.utils.json_to_sheet([], {header: ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
     XLSX.utils.book_append_sheet(wb, bibleSheet, "성경 자료");
 
     const sermonSheet = XLSX.utils.json_to_sheet([], {header: ['구분', '설교 종류', '제목', '설교자', '날짜', '성경 본문', '내용']});
@@ -329,18 +273,6 @@ export const importAllData = (file: File): Promise<{ workbook: any; keywords: Ke
                     if (!keywordMap.has(keywordName)) {
                         keywordMap.set(keywordName, []);
                     }
-
-                    const imageChunks: string[] = [];
-                    Object.keys(row).forEach(key => {
-                        if (key.startsWith('이미지_')) {
-                            const index = parseInt(key.split('_')[1], 10) - 1;
-                            if (!isNaN(index) && row[key]) {
-                                imageChunks[index] = row[key];
-                            }
-                        }
-                    });
-                    const contentImage = imageChunks.length > 0 ? imageChunks.join('') : (row['이미지 (base64)'] || null);
-
                     keywordMap.get(keywordName)!.push({
                         id: crypto.randomUUID(),
                         bookTitle: row['서명'] || '',
@@ -348,7 +280,7 @@ export const importAllData = (file: File): Promise<{ workbook: any; keywords: Ke
                         publicationInfo: row['출판사항'] || '',
                         pages: String(row['페이지'] || ''),
                         content: row['내용'] || '',
-                        contentImage: contentImage,
+                        contentImage: row['이미지 (base64)'] || null,
                         createdAt: new Date().toISOString()
                     });
                 });
@@ -379,18 +311,6 @@ export const importAllData = (file: File): Promise<{ workbook: any; keywords: Ke
                     const ve = row['끝 절'] ? parseInt(row['끝 절'], 10) : undefined;
                     
                     const locationKey = `${book}-${cs}-${vs || ''}-${ce || ''}-${ve || ''}`;
-
-                    const imageChunks: string[] = [];
-                    Object.keys(row).forEach(key => {
-                        if (key.startsWith('이미지_')) {
-                            const index = parseInt(key.split('_')[1], 10) - 1;
-                            if (!isNaN(index) && row[key]) {
-                                imageChunks[index] = row[key];
-                            }
-                        }
-                    });
-                    const contentImage = imageChunks.length > 0 ? imageChunks.join('') : (row['이미지 (base64)'] || null);
-
                     const material: Material = {
                         id: crypto.randomUUID(),
                         bookTitle: row['서명'] || '',
@@ -398,7 +318,7 @@ export const importAllData = (file: File): Promise<{ workbook: any; keywords: Ke
                         publicationInfo: row['출판사항'] || '',
                         pages: String(row['페이지'] || ''),
                         content: row['내용'] || '',
-                        contentImage: contentImage,
+                        contentImage: row['이미지 (base64)'] || null,
                         createdAt: new Date().toISOString()
                     };
 
