@@ -16,7 +16,6 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
   const [publicationInfo, setPublicationInfo] = useState('');
   const [pages, setPages] = useState('');
   const [content, setContent] = useState('');
-  const [contentImage, setContentImage] = useState<string | null>(null);
   const [shouldUseLast, setShouldUseLast] = useState(false);
 
   useEffect(() => {
@@ -26,14 +25,12 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
       setPublicationInfo(materialToEdit.publicationInfo);
       setPages(materialToEdit.pages);
       setContent(materialToEdit.content);
-      setContentImage(materialToEdit.contentImage || null);
     } else {
       setBookTitle('');
       setAuthor('');
       setPublicationInfo('');
       setPages('');
       setContent('');
-      setContentImage(null);
     }
     setShouldUseLast(false);
   }, [materialToEdit, isOpen]);
@@ -47,14 +44,12 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
             setPublicationInfo(lastAddedMaterial.publicationInfo);
             setPages(lastAddedMaterial.pages);
             setContent(lastAddedMaterial.content);
-            setContentImage(lastAddedMaterial.contentImage || null);
         } else if (!materialToEdit) {
             setBookTitle('');
             setAuthor('');
             setPublicationInfo('');
             setPages('');
             setContent('');
-            setContentImage(null);
         }
         return nextShouldUseLast;
     });
@@ -67,7 +62,6 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
         setPublicationInfo(lastAddedMaterial.publicationInfo);
         setPages(lastAddedMaterial.pages);
         setContent('');
-        setContentImage(null);
         setShouldUseLast(true);
     }
   }, [lastAddedMaterial]);
@@ -92,25 +86,13 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
     };
   }, [isOpen, materialToEdit, lastAddedMaterial, toggleUseLastInfo, useLastInfoExceptContent]);
 
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setContentImage(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!bookTitle || (content.trim() === '' && !contentImage)) {
-      alert('서명과 내용 또는 이미지는 필수 항목입니다.');
+    if (!bookTitle || content.trim() === '') {
+      alert('서명과 내용은 필수 항목입니다.');
       return;
     }
-    onSave({ bookTitle, author, publicationInfo, pages, content, contentImage }, materialToEdit?.id);
+    onSave({ bookTitle, author, publicationInfo, pages, content }, materialToEdit?.id);
   };
 
   if (!isOpen) return null;
@@ -190,41 +172,10 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
                 id="content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                rows={5}
+                rows={8}
                 className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-gray-900 dark:text-gray-100"
-                required={!contentImage}
+                required
               />
-            </div>
-            <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    이미지 첨부
-                </label>
-                <div className="mt-1 flex items-center justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md">
-                    <div className="space-y-1 text-center">
-                        {contentImage ? (
-                            <div>
-                                <img src={contentImage} alt="Preview" className="mx-auto max-h-40 rounded-md" />
-                                <button type="button" onClick={() => { setContentImage(null); (document.getElementById('image-upload') as HTMLInputElement).value = ''; }} className="mt-2 text-sm text-red-600 dark:text-red-400 hover:underline">
-                                    이미지 삭제
-                                </button>
-                            </div>
-                        ) : (
-                            <>
-                                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                                <div className="flex text-sm text-gray-600 dark:text-gray-400">
-                                    <label htmlFor="image-upload" className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
-                                        <span>파일 업로드</span>
-                                        <input id="image-upload" name="image-upload" type="file" className="sr-only" accept="image/*" onChange={handleImageUpload} />
-                                    </label>
-                                    <p className="pl-1">또는 파일을 끌어다 놓으세요</p>
-                                </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-500">PNG, JPG, GIF</p>
-                            </>
-                        )}
-                    </div>
-                </div>
             </div>
           </div>
           <div className="mt-6 flex justify-end space-x-3 flex-shrink-0">

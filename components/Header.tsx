@@ -11,10 +11,14 @@ interface HeaderProps {
   gdrive: {
     isSignedIn: boolean;
     syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
-    handleSignIn: () => void;
+    handleSignIn: (onSuccess?: () => void) => void;
     handleSignOut: () => void;
     syncData: () => void;
     userProfile: UserProfile | null;
+    isReady: boolean;
+    driveFileName: string | null;
+    isBackupAvailable: boolean;
+    restoreFromBackup: () => void;
   };
   onSearch: (term: string) => void;
   onToggleSidebar: () => void;
@@ -92,9 +96,9 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
   };
 
   const syncIndicatorColor = {
-    idle: 'text-gray-400',
-    syncing: 'text-yellow-400 animate-pulse',
-    synced: 'text-green-400',
+    idle: 'text-sky-500',
+    syncing: 'text-orange-500 animate-pulse',
+    synced: 'text-sky-500',
     error: 'text-red-400',
   };
   
@@ -237,7 +241,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                     <SearchIcon className="h-4 w-4 text-gray-400" />
                 </div>
             </form>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center flex-wrap gap-2">
                 <nav className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 px-1 rounded-full">
                     <button onClick={() => setMode('keyword')} className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap ${mode === 'keyword' ? 'bg-white dark:bg-gray-900 text-primary-600 shadow' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
                     키워드
@@ -256,8 +260,12 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
                 </nav>
                 <button
                     onClick={onUpdate}
-                    className="px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap bg-red-500 text-white shadow hover:bg-red-600"
-                    title={isDataDirty ? "변경사항 저장 (Ctrl+S)" : "변경사항이 없습니다"}
+                    className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors whitespace-nowrap text-white shadow ${
+                        isDataDirty
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-green-500 hover:bg-green-600'
+                    }`}
+                    title={isDataDirty ? "변경사항 저장 (Ctrl+S)" : "모든 변경사항이 저장되었습니다"}
                 >
                     저장하기
                 </button>

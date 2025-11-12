@@ -23,6 +23,8 @@ declare global {
     }
 }
 
+const MAX_CELL_LENGTH = 32000; // Excel cell character limit is 32,767
+
 
 const getTimestamp = (): string => {
     const now = new Date();
@@ -128,17 +130,16 @@ const createKeywordsSheet = (keywords: Keyword[]) => {
     const sortedKeywords = [...keywords].sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
     
     const flattenedData = sortedKeywords.flatMap(keyword => 
-        (keyword.materials.length > 0 ? keyword.materials : [{bookTitle: '', author: '', publicationInfo: '', pages: '', content: '', contentImage: null}]).map(material => ({
+        (keyword.materials.length > 0 ? keyword.materials : [{bookTitle: '', author: '', publicationInfo: '', pages: '', content: ''}]).map(material => ({
           '키워드': keyword.name,
           '서명': material.bookTitle,
           '저자': material.author,
           '출판사항': material.publicationInfo,
           '페이지': material.pages,
           '내용': material.content,
-          '이미지 (base64)': material.contentImage || '',
         }))
       );
-    return XLSX.utils.json_to_sheet(flattenedData, {header: ['키워드', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
+    return XLSX.utils.json_to_sheet(flattenedData, {header: ['키워드', '서명', '저자', '출판사항', '페이지', '내용']});
 };
 
 const createBibleSheet = (bibleData: BibleMaterialLocation[]) => {
@@ -172,10 +173,9 @@ const createBibleSheet = (bibleData: BibleMaterialLocation[]) => {
           '출판사항': material.publicationInfo,
           '페이지': material.pages,
           '내용': material.content,
-          '이미지 (base64)': material.contentImage || '',
         }))
       );
-      return XLSX.utils.json_to_sheet(flattenedData, {header: ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
+      return XLSX.utils.json_to_sheet(flattenedData, {header: ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용']});
 };
 
 const createSermonsSheet = (sermons: Sermon[]) => {
@@ -235,10 +235,10 @@ export const updateDataAndExport = (workbook: any, fileName: string, keywords: K
 export const downloadTemplate = () => {
     const wb = XLSX.utils.book_new();
 
-    const keywordSheet = XLSX.utils.json_to_sheet([], {header: ['키워드', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
+    const keywordSheet = XLSX.utils.json_to_sheet([], {header: ['키워드', '서명', '저자', '출판사항', '페이지', '내용']});
     XLSX.utils.book_append_sheet(wb, keywordSheet, "키워드 자료");
 
-    const bibleSheet = XLSX.utils.json_to_sheet([], {header: ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용', '이미지 (base64)']});
+    const bibleSheet = XLSX.utils.json_to_sheet([], {header: ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용']});
     XLSX.utils.book_append_sheet(wb, bibleSheet, "성경 자료");
 
     const sermonSheet = XLSX.utils.json_to_sheet([], {header: ['구분', '설교 종류', '제목', '설교자', '날짜', '성경 본문', '내용']});
@@ -259,7 +259,7 @@ export const importAllData = (file: File): Promise<{ workbook: any; keywords: Ke
                 // Keywords
                 const keywordSheet = workbook.Sheets["키워드 자료"];
                 const keywordJson: any[] = keywordSheet ? XLSX.utils.sheet_to_json(keywordSheet) : [];
-                const keywordMap = new Map<string, Material[]>();
+                const keywordMap = new Map<string, Omit<Material, 'id' | 'createdAt'>[]>();
                 keywordJson.forEach(row => {
                     const keywordName = row['키워드']?.toString().trim();
                     if (!keywordName) return;
@@ -268,18 +268,20 @@ export const importAllData = (file: File): Promise<{ workbook: any; keywords: Ke
                         keywordMap.set(keywordName, []);
                     }
                     keywordMap.get(keywordName)!.push({
-                        id: crypto.randomUUID(),
                         bookTitle: row['서명'] || '',
                         author: row['저자'] || '',
                         publicationInfo: row['출판사항'] || '',
                         pages: String(row['페이지'] || ''),
                         content: row['내용'] || '',
-                        contentImage: row['이미지 (base64)'] || null,
-                        createdAt: new Date().toISOString()
                     });
                 });
-                const keywords: Keyword[] = Array.from(keywordMap.entries()).map(([name, materials]) => {
+                const keywords: Keyword[] = Array.from(keywordMap.entries()).map(([name, materialsData]) => {
                     const now = new Date().toISOString();
+                    const materials = materialsData.map(m => ({
+                        ...m,
+                        id: crypto.randomUUID(),
+                        createdAt: now,
+                    }))
                     return {
                         id: crypto.randomUUID(),
                         name,
@@ -312,7 +314,6 @@ export const importAllData = (file: File): Promise<{ workbook: any; keywords: Ke
                         publicationInfo: row['출판사항'] || '',
                         pages: String(row['페이지'] || ''),
                         content: row['내용'] || '',
-                        contentImage: row['이미지 (base64)'] || null,
                         createdAt: new Date().toISOString()
                     };
 

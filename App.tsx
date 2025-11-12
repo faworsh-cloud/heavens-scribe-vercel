@@ -154,7 +154,10 @@ const App: React.FC = () => {
   const [originalFileName, setOriginalFileName] = useState<string | null>(null);
   const isUpdateExport = !!originalWorkbook;
   
-  const isDataDirty = isUpdateExport && lastSavedTimestamp !== null && lastModified > lastSavedTimestamp;
+  const hasData = keywords.length > 0 || bibleData.length > 0 || sermons.length > 0;
+  const isDataDirty = 
+    (lastSavedTimestamp !== null && lastModified > lastSavedTimestamp) ||
+    (lastSavedTimestamp === null && hasData);
 
   // Handle Escape key to close modals
   useEffect(() => {
@@ -312,533 +315,488 @@ const App: React.FC = () => {
 
   // Generic Material Save Handler
   const handleSaveMaterial = (materialData: Omit<Material, 'id' | 'createdAt'>, id?: string) => {
-    setLastAddedMaterial(materialData);
-    const context = editContext || { mode, selectedKeywordId, selectedBook };
-    
-    if (context.mode === 'keyword') {
-      const keywordId = context.keywordId || context.selectedKeywordId;
-      if (!keywordId) return;
-      setKeywords(prev => prev.map(kw => {
-        if (kw.id === keywordId) {
-          const updatedMaterials = materialToEdit
-            ? kw.materials.map(m => m.id === materialToEdit.id ? { ...m, ...materialData } : m)
-            : [...kw.materials, { ...materialData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }];
-          return { ...kw, materials: updatedMaterials, updatedAt: new Date().toISOString() };
-        }
-        return kw;
-      }));
-    } else if (context.mode === 'bible') {
-       const newMaterial: Material = { ...materialData, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-       if (materialToEdit) { // Editing existing material
+    try {
+      setLastAddedMaterial(materialData);
+      const context = editContext || { mode, selectedKeywordId, selectedBook };
+      
+      if (context.mode === 'keyword') {
+        const keywordId = context.keywordId || context.selectedKeywordId;
+        if (!keywordId) return;
+        setKeywords(prev => prev.map(kw => {
+          if (kw.id === keywordId) {
+            const now = new Date().toISOString();
+            if (id) { // Editing existing material
+              return {
+                ...kw,
+                materials: kw.materials.map(m => m.id === id ? { ...m, ...materialData } : m),
+                updatedAt: now
+              };
+            } else { // Adding new material
+              return {
+                ...kw,
+                materials: [...kw.materials, { ...materialData, id: crypto.randomUUID(), createdAt: now }],
+                updatedAt: now
+              };
+            }
+          }
+          return kw;
+        }));
+      } else if (context.mode === 'bible') {
+        const { book, chapterStart, verseStart, chapterEnd, verseEnd, locationId } = context;
+        if (id && locationId) { // Editing
             setBibleData(prev => prev.map(loc => {
-                if(loc.id === context.locationId) {
+                if (loc.id === locationId) {
                     return {
                         ...loc,
-                        materials: loc.materials.map(m => m.id === materialToEdit.id ? {...m, ...materialData} : m),
+                        materials: loc.materials.map(m => m.id === id ? { ...m, ...materialData } : m),
                         updatedAt: new Date().toISOString()
-                    }
+                    };
                 }
                 return loc;
             }));
-       } else { // Adding new material
-            const existingLocation = bibleData.find(l => 
-                l.book === context.book &&
-                l.chapterStart === context.chapterStart &&
-                l.verseStart === context.verseStart &&
-                l.chapterEnd === context.chapterEnd &&
-                l.verseEnd === context.verseEnd
-            );
+        } else { // Adding
+            const newMaterial: Material = { ...materialData, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+            setBibleData(prev => {
+                const existingLocation = prev.find(loc => 
+                    loc.book === book &&
+                    loc.chapterStart === chapterStart &&
+                    loc.verseStart === verseStart &&
+                    loc.chapterEnd === chapterEnd &&
+                    loc.verseEnd === verseEnd
+                );
 
-            if (existingLocation) {
-                 setBibleData(prev => prev.map(loc => loc.id === existingLocation.id ? { ...loc, materials: [...loc.materials, newMaterial], updatedAt: new Date().toISOString() } : loc));
-            } else {
-                const now = new Date().toISOString();
-                const newLocation: BibleMaterialLocation = {
-                    id: crypto.randomUUID(),
-                    createdAt: now,
-                    updatedAt: now,
-                    book: context.book,
-                    chapterStart: context.chapterStart,
-                    verseStart: context.verseStart,
-                    chapterEnd: context.chapterEnd,
-                    verseEnd: context.verseEnd,
-                    materials: [newMaterial]
-                };
-                setBibleData(prev => [...prev, newLocation]);
-            }
-       }
+                if (existingLocation) {
+                    return prev.map(loc => loc.id === existingLocation.id ? { ...loc, materials: [...loc.materials, newMaterial], updatedAt: new Date().toISOString() } : loc);
+                } else {
+                    const now = new Date().toISOString();
+                    const newLocation: BibleMaterialLocation = {
+                        id: crypto.randomUUID(),
+                        book,
+                        chapterStart,
+                        verseStart,
+                        chapterEnd,
+                        verseEnd,
+                        materials: [newMaterial],
+                        createdAt: now,
+                        updatedAt: now
+                    };
+                    return [...prev, newLocation];
+                }
+            });
+        }
+      }
+      setIsMaterialModalOpen(false);
+      setMaterialToEdit(null);
+      setEditContext(null);
+    } catch (error) {
+      console.error("Error saving material:", error);
+      alert("자료 저장 중 오류가 발생했습니다.");
     }
-
-    setIsMaterialModalOpen(false);
-    setMaterialToEdit(null);
-    setEditContext(null);
   };
 
+  const handleOpenMaterialModal = (material: Material | null, context: any) => {
+    setMaterialToEdit(material);
+    setEditContext(context);
+    setIsMaterialModalOpen(true);
+  };
+  
   // Sermon Handlers
   const handleSaveSermon = (sermonData: Omit<Sermon, 'id' | 'createdAt' | 'updatedAt'>, id?: string) => {
-      const now = new Date().toISOString();
-      if (sermonToEdit) {
-          setSermons(prev => prev.map(s => s.id === sermonToEdit.id ? { ...s, ...sermonData, updatedAt: now } : s));
-      } else {
-          const newSermon: Sermon = { ...sermonData, id: crypto.randomUUID(), createdAt: now, updatedAt: now };
-          setSermons(prev => [...prev, newSermon]);
-      }
-      setIsSermonModalOpen(false);
-      setSermonToEdit(null);
+    const now = new Date().toISOString();
+    if (id) {
+        setSermons(prev => prev.map(s => s.id === id ? { ...s, ...sermonData, updatedAt: now } : s));
+    } else {
+        const newSermon: Sermon = { ...sermonData, id: crypto.randomUUID(), createdAt: now, updatedAt: now };
+        setSermons(prev => [...prev, newSermon]);
+    }
+    setIsSermonModalOpen(false);
+    setSermonToEdit(null);
+  };
+
+  const handleEditSermon = (sermon: Sermon) => {
+    setSermonToEdit(sermon);
+    setIsSermonModalOpen(true);
   };
 
   const handleDeleteSermon = (id: string) => {
-      if(window.confirm('이 설교를 정말 삭제하시겠습니까?')) {
-          setSermons(prev => prev.filter(s => s.id !== id));
-          if(selectedSermonId === id) {
-              setSelectedSermonId(null);
-          }
-      }
+      setSermons(prev => prev.filter(s => s.id !== id));
   };
 
-  // HWP Import Handler
-  const handleImportData = useCallback((data: any[], type: 'keyword' | 'bible' | 'sermon') => {
-    if (!data || data.length === 0) {
-        alert('추가할 데이터가 없습니다.');
-        return;
-    }
-
-    const backupData: AppData = {
-        keywords: JSON.parse(JSON.stringify(keywords)),
-        bibleData: JSON.parse(JSON.stringify(bibleData)),
-        sermons: JSON.parse(JSON.stringify(sermons)),
-        lastModified: lastModified,
-    };
-    setImportBackup(backupData);
-    
-    let itemsAddedCount = 0;
-
-    if (type === 'keyword') {
-      type ImportedKeyword = { keyword: string; materials: Omit<Material, 'id' | 'createdAt'>[] };
-      const importedKeywords = data;
-      itemsAddedCount = importedKeywords.length;
-      setKeywords(currentKeywords => {
-        const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
-        
-        for (const item of importedKeywords) {
-          // FIX: Add a type guard to safely handle imported data, preventing errors from malformed entries.
-          if (
-            item &&
-            typeof item === 'object' &&
-            'keyword' in item &&
-            typeof (item as any).keyword === 'string' &&
-            'materials' in item &&
-            Array.isArray((item as any).materials)
-          ) {
-            // FIX: The destructuring with a type cast was causing a TypeScript error. Replaced with direct property access for safer type handling.
-            // FIX: Replaced spread destructuring with direct property access to resolve type errors.
-            // The spread operator on an `any` type was causing issues with strict compiler settings.
-            const keyword = (item as ImportedKeyword).keyword;
-            const materials = (item as ImportedKeyword).materials;
-
-            if (!keyword) {
-              continue;
-            }
-
-            const newMaterials = materials
-              .filter(m => typeof m === 'object' && m !== null) // Ensure materials are objects
-              .map((m) => ({
-                bookTitle: (m as any).bookTitle || '',
-                author: (m as any).author || '',
-                publicationInfo: (m as any).publicationInfo || '',
-                pages: (m as any).pages || '',
-                content: (m as any).content || '',
-                contentImage: (m as any).contentImage || null,
-                id: crypto.randomUUID(),
-                createdAt: new Date().toISOString()
-              }));
-            
-            const now = new Date().toISOString();
-            if (keywordsMap.has(keyword)) {
-                const existing = keywordsMap.get(keyword)!;
-                const updatedKeyword = { ...existing, materials: [...existing.materials, ...newMaterials], updatedAt: now };
-                keywordsMap.set(keyword, updatedKeyword);
-            } else {
-                keywordsMap.set(keyword, {
-                    id: crypto.randomUUID(),
-                    name: keyword,
-                    materials: newMaterials,
-                    createdAt: now,
-                    updatedAt: now
-                });
-            }
-          }
-        }
-        return Array.from(keywordsMap.values());
-      });
-    } else if (type === 'bible') {
-       const now = new Date().toISOString();
-       const importedLocations = (data as BibleMaterialLocation[]).map(loc => ({
-           ...loc,
-           updatedAt: now
-       }));
-       itemsAddedCount = importedLocations.length;
-       setBibleData(currentBibleData => [...currentBibleData, ...importedLocations]);
-    } else if (type === 'sermon') {
-      const now = new Date().toISOString();
-      const importedSermons = (data as Omit<Sermon, 'id' | 'createdAt' | 'updatedAt'>[]).map(s => ({
-        ...s,
-        id: crypto.randomUUID(),
-        createdAt: now,
-        updatedAt: now,
-        style: s.style || 'expository',
-      }));
-      itemsAddedCount = importedSermons.length;
-      setSermons(currentSermons => [...currentSermons, ...importedSermons]);
-    }
-    
-    setToast({ message: `${itemsAddedCount}개 항목이 추가되었습니다. 설정에서 되돌릴 수 있습니다.` });
-    setMode(type);
-
-  }, [keywords, bibleData, sermons, lastModified, setKeywords, setBibleData, setSermons, setMode, setImportBackup]);
-  
-  const handleRestoreFromImportBackup = () => {
-    if (importBackup && window.confirm('마지막 가져오기 작업을 실행 취소하고 데이터를 이전 상태로 복원하시겠습니까?')) {
-        isBulkUpdating.current = true;
-        _setKeywords(importBackup.keywords);
-        _setBibleData(importBackup.bibleData);
-        _setSermons(importBackup.sermons);
-        setLastModified(importBackup.lastModified);
-        setImportBackup(null);
-        setToast({ message: '데이터가 이전 버전으로 복원되었습니다.' });
-        setIsSettingsModalOpen(false);
-        setTimeout(() => { isBulkUpdating.current = false; }, 100);
-    }
+  // Search Handlers
+  const handleGlobalSearch = (term: string) => {
+    setGlobalSearchTerm(term);
+    setMode('search');
   };
 
-  // --- Unified Excel Handlers ---
-  const handleUnifiedExport = useCallback(() => {
-    if (originalWorkbook && originalFileName) {
-      updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
-    } else {
-      exportAllData(keywords, bibleData, sermons);
-    }
-    const now = new Date().toISOString();
-    setLastModified(now);
-    setLastSavedTimestamp(now);
-  }, [originalWorkbook, originalFileName, keywords, bibleData, sermons, setLastModified, setLastSavedTimestamp]);
-
-  const handleDownloadTemplateFile = () => {
-    downloadTemplate();
-  };
-
-  const handleImportAllData = async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      if (!window.confirm("엑셀 파일에서 모든 데이터를 가져옵니다. 현재 앱의 모든 데이터(키워드, 성경, 설교)가 덮어쓰여집니다. 계속하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
-          if (event.target) event.target.value = ''; // Reset file input
-          return;
-      }
-
-      try {
-          isBulkUpdating.current = true;
-          const { workbook, keywords: importedKeywords, bibleData: importedBibleData, sermons: importedSermons } = await importAllData(file);
-          
-          setOriginalWorkbook(workbook);
-          setOriginalFileName(file.name);
-          
-          _setKeywords(importedKeywords);
-          _setBibleData(importedBibleData);
-          _setSermons(importedSermons);
-
-          const now = new Date().toISOString();
-          setLastModified(now);
-          setLastSavedTimestamp(now);
-
-          alert(`데이터 가져오기가 완료되었습니다.\n- 키워드: ${importedKeywords.length}개\n- 성경 자료: ${importedBibleData.length}개 위치\n- 설교: ${importedSermons.length}개`);
-          setIsSettingsModalOpen(false);
-      } catch (error: any) {
-          alert(error.message || "데이터를 가져오는 중 오류가 발생했습니다.");
-      } finally {
-          if (event.target) event.target.value = ''; // Reset file input
-          setTimeout(() => { isBulkUpdating.current = false; }, 100);
-      }
-  };
-  
-  // Ctrl+S shortcut handler
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-            handleUnifiedExport();
-        }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleUnifiedExport]);
-
-
-
-  // --- Modal Openers ---
-  const openAddMaterialModal = (context: any = {}) => {
-    if (mode === 'keyword' && !selectedKeywordId) {
-        alert('자료를 추가할 키워드를 선택해주세요.');
-        return;
-    }
-    setMaterialToEdit(null);
-    setEditContext({ mode, selectedKeywordId, ...context });
-    setIsMaterialModalOpen(true);
-  };
-
-  const openEditMaterialModal = (material: Material, context: any) => {
-    setMaterialToEdit(material);
-    setEditContext({ mode, ...context });
-    setIsMaterialModalOpen(true);
-  };
-
-  const openAddSermonModal = () => {
-      setSermonToEdit(null);
-      setIsSermonModalOpen(true);
-  }
-  
-  const openEditSermonModal = (sermon: Sermon) => {
-      setSermonToEdit(sermon);
-      setIsSermonModalOpen(true);
-  }
-
-  // --- Search ---
   const searchResults = useMemo(() => {
-    if (!globalSearchTerm) return null;
-    const term = globalSearchTerm.toLowerCase();
-
-    const keywordResults = keywords.map((k: Keyword) => {
-        const matchingMaterials = k.materials.filter(m =>
-            m.content.toLowerCase().includes(term) ||
-            m.bookTitle.toLowerCase().includes(term) ||
-            m.author.toLowerCase().includes(term)
-        );
-        if (k.name.toLowerCase().includes(term) || matchingMaterials.length > 0) {
-            return { ...k, materials: k.name.toLowerCase().includes(term) ? k.materials : matchingMaterials };
-        }
-        return null;
+    if (!globalSearchTerm) {
+      return { keywords: [], bible: [], sermons: [] };
+    }
+    const lowerCaseTerm = globalSearchTerm.toLowerCase();
+    
+    const keywordResults = keywords.map(keyword => {
+      const matchingMaterials = keyword.materials.filter(m =>
+        m.bookTitle.toLowerCase().includes(lowerCaseTerm) ||
+        m.author.toLowerCase().includes(lowerCaseTerm) ||
+        m.content.toLowerCase().includes(lowerCaseTerm)
+      );
+      if (keyword.name.toLowerCase().includes(lowerCaseTerm) || matchingMaterials.length > 0) {
+        return {
+          ...keyword,
+          materials: keyword.name.toLowerCase().includes(lowerCaseTerm) ? keyword.materials : matchingMaterials,
+        };
+      }
+      return null;
     }).filter((k): k is Keyword => k !== null);
 
-    const bibleResults = bibleData.map((l: BibleMaterialLocation) => {
-        const matchingMaterials = l.materials.filter(m =>
-            m.content.toLowerCase().includes(term) ||
-            m.bookTitle.toLowerCase().includes(term) ||
-            m.author.toLowerCase().includes(term)
+    const bibleResults = bibleData.map(location => {
+        const matchingMaterials = location.materials.filter(m =>
+            m.bookTitle.toLowerCase().includes(lowerCaseTerm) ||
+            m.author.toLowerCase().includes(lowerCaseTerm) ||
+            m.content.toLowerCase().includes(lowerCaseTerm)
         );
         if (matchingMaterials.length > 0) {
-            return { ...l, materials: matchingMaterials };
+            return { ...location, materials: matchingMaterials };
         }
         return null;
     }).filter((l): l is BibleMaterialLocation => l !== null);
-
-    const sermonResults = sermons.filter(s =>
-        s.title.toLowerCase().includes(term) ||
-        s.preacher.toLowerCase().includes(term) ||
-        s.bibleReference.toLowerCase().includes(term) ||
-        s.content.toLowerCase().includes(term)
+    
+    const sermonResults = sermons.filter(sermon => 
+        sermon.title.toLowerCase().includes(lowerCaseTerm) ||
+        sermon.preacher.toLowerCase().includes(lowerCaseTerm) ||
+        sermon.bibleReference.toLowerCase().includes(lowerCaseTerm) ||
+        sermon.content.toLowerCase().includes(lowerCaseTerm)
     );
 
     return { keywords: keywordResults, bible: bibleResults, sermons: sermonResults };
   }, [globalSearchTerm, keywords, bibleData, sermons]);
-  
-  const handleGlobalSearch = (term: string) => {
-    setGlobalSearchTerm(term);
-    setMode('search');
-  }
-  
-  // FIX: Replace `any` with a specific union type for better type safety.
-  // The 'item' parameter was using 'any', which bypasses type checking. 
-  // By using a specific union type, we leverage TypeScript's type safety.
-  // Additionally, an unsafe cast for 'bible' mode was replaced with a type guard.
+
   const handleSearchResultClick = (item: Keyword | BibleMaterialLocation | Sermon, type: 'keyword' | 'bible' | 'sermon') => {
-      if (type === 'keyword') {
-          setMode('keyword');
-          setSelectedKeywordId(item.id);
-      } else if (type === 'bible') {
-          setMode('bible');
-          // FIX: The original cast was unsafe. Adding a type guard to ensure 'item' is a BibleMaterialLocation.
-          // The 'book' property is unique to BibleMaterialLocation in the union type.
-          if ('book' in item) {
-            setSelectedBook(item.book);
-          }
-      } else if (type === 'sermon') {
-          setMode('sermon');
-          setSelectedSermonId(item.id);
-      }
-      setGlobalSearchTerm('');
+    switch (type) {
+      case 'keyword':
+        setSelectedKeywordId((item as Keyword).id);
+        setMode('keyword');
+        break;
+      case 'bible':
+        setSelectedBook((item as BibleMaterialLocation).book);
+        setMode('bible');
+        break;
+      case 'sermon':
+        setSelectedSermonId((item as Sermon).id);
+        setMode('sermon');
+        break;
+    }
+    setGlobalSearchTerm('');
   };
 
+  // Excel Handlers
+  const handleExportAll = () => {
+    exportAllData(keywords, bibleData, sermons);
+    setLastSavedTimestamp(new Date().toISOString());
+  };
 
-  // --- Render Logic ---
-  if (pinEnabled && !isAuthenticated) {
-      return <AuthScreen onPinVerify={handlePinVerify} />;
-  }
+  const handleUpdateAndExport = () => {
+    if (originalWorkbook && originalFileName) {
+        updateDataAndExport(originalWorkbook, originalFileName, keywords, bibleData, sermons);
+        setLastSavedTimestamp(new Date().toISOString());
+    } else {
+        handleExportAll();
+    }
+  };
+  
+  const handleImportAll = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if(hasData && !window.confirm('현재 작업 중인 데이터가 있습니다. 파일을 가져오면 현재 데이터가 모두 사라집니다. 계속하시겠습니까?')) {
+      e.target.value = ''; // Reset file input
+      return;
+    }
     
-  const selectedKeyword = useMemo(() => {
-    return keywords.find(k => k.id === selectedKeywordId) || null;
-  }, [keywords, selectedKeywordId]);
+    setImportBackup({ keywords, bibleData, sermons, lastModified });
+    
+    try {
+        const { workbook, keywords: newKeywords, bibleData: newBibleData, sermons: newSermons } = await importAllData(file);
+        
+        isBulkUpdating.current = true;
+        setKeywords(newKeywords);
+        setBibleData(newBibleData);
+        setSermons(newSermons);
+        isBulkUpdating.current = false;
 
-  const materialsForBook = useMemo(() => {
-      return bibleData.filter(d => d.book === selectedBook)
-            .sort((a,b) => {
-                if (a.chapterStart !== b.chapterStart) return a.chapterStart - b.chapterStart;
-                return (a.verseStart || 0) - (b.verseStart || 0);
-            });
-  }, [bibleData, selectedBook]);
-
-
-  const renderMode = () => {
-    switch (mode) {
-      case 'keyword':
-        return <KeywordMode
-          keywords={keywords}
-          selectedKeyword={selectedKeyword}
-          selectedKeywordId={selectedKeywordId}
-          onSelectKeyword={(id) => { setSelectedKeywordId(id); setIsSidebarOpen(false); }}
-          onAddKeyword={handleAddKeyword}
-          onDeleteKeyword={handleDeleteKeyword}
-          onAddMaterial={openAddMaterialModal}
-          onEditMaterial={(material) => openEditMaterialModal(material, { keywordId: selectedKeywordId })}
-          onDeleteMaterial={(materialId: string) => selectedKeywordId && handleDeleteKeywordMaterial(materialId, selectedKeywordId)}
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-        />;
-      case 'bible':
-        return <BibleMode
-            selectedBook={selectedBook}
-            onSelectBook={(book) => setSelectedBook(book)}
-            materialsForBook={materialsForBook}
-            bibleData={bibleData}
-            onUpdateBibleData={setBibleData}
-            onAddMaterial={(context) => openAddMaterialModal(context)}
-            onEditMaterial={(material, location) => openEditMaterialModal(material, {locationId: location.id})}
-            onDeleteMaterial={handleDeleteBibleMaterial}
-            useAbbreviation={useAbbreviation}
-            isSidebarOpen={isSidebarOpen}
-            setIsSidebarOpen={setIsSidebarOpen}
-        />
-      case 'sermon':
-        return <SermonMode
-          sermons={sermons}
-          onAddSermon={openAddSermonModal}
-          onEditSermon={openEditSermonModal}
-          onDeleteSermon={handleDeleteSermon}
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-          initialSelectedSermonId={selectedSermonId}
-          useAbbreviation={useAbbreviation}
-        />
-      case 'hwp':
-        return <HwpConvertMode 
-            geminiApiKey={geminiApiKey} 
-            onImportData={handleImportData} 
-            hwpConversionEnabled={hwpConversionEnabled}
-            onOpenSettings={() => setIsSettingsModalOpen(true)}
-        />;
-      case 'search':
-        return searchResults && <GlobalSearchResults results={searchResults} searchTerm={globalSearchTerm} onClick={handleSearchResultClick} />;
-      default:
-        return null;
+        const now = new Date().toISOString();
+        setLastModified(now);
+        setLastSavedTimestamp(now);
+        
+        setOriginalWorkbook(workbook);
+        setOriginalFileName(file.name);
+        setToast({ message: '데이터를 성공적으로 가져왔습니다.' });
+    } catch (error: any) {
+        console.error(error);
+        alert(error.message);
+        handleRestoreFromImportBackup(false);
+    } finally {
+        e.target.value = '';
     }
   };
 
-  const Toast = () => {
-    if (!toast) return null;
-    return (
-      <div className="fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-lg z-[100] animate-fade-in-up">
-        <span>{toast.message}</span>
-      </div>
-    );
+  const handleRestoreFromImportBackup = (confirm=true) => {
+    if (importBackup) {
+        if (!confirm || window.confirm('가장 최근에 가져오기 전 상태로 데이터를 복원하시겠습니까?')) {
+            isBulkUpdating.current = true;
+            setKeywords(importBackup.keywords);
+            setBibleData(importBackup.bibleData);
+            setSermons(importBackup.sermons);
+            isBulkUpdating.current = false;
+            setLastModified(importBackup.lastModified);
+            setImportBackup(null);
+            if (confirm) setToast({ message: '데이터가 복원되었습니다.' });
+        }
+    } else {
+        if (confirm) alert('복원할 백업 데이터가 없습니다.');
+    }
   };
 
+  const handleDownloadTemplate = () => {
+    downloadTemplate();
+  };
+
+  const handleImportFromHwp = (data: any[], type: 'keyword' | 'bible' | 'sermon') => {
+    setImportBackup({ keywords, bibleData, sermons, lastModified });
+    
+    if (type === 'keyword') {
+      const newKeywords: Keyword[] = [...keywords];
+      const keywordMap = new Map(newKeywords.map(k => [k.name, k]));
+
+      (data as { keyword: string; materials: Omit<Material, 'id' | 'createdAt'>[] }[]).forEach(item => {
+        const now = new Date().toISOString();
+        const newMaterials = item.materials.map(m => ({ ...m, id: crypto.randomUUID(), createdAt: now }));
+        
+        if (keywordMap.has(item.keyword)) {
+          const existing = keywordMap.get(item.keyword)!;
+          existing.materials.push(...newMaterials);
+          existing.updatedAt = now;
+        } else {
+          const newKeyword: Keyword = {
+            id: crypto.randomUUID(),
+            name: item.keyword,
+            materials: newMaterials,
+            createdAt: now,
+            updatedAt: now,
+          };
+          newKeywords.push(newKeyword);
+          keywordMap.set(item.keyword, newKeyword);
+        }
+      });
+      setKeywords(newKeywords);
+    } else if (type === 'bible') {
+      setBibleData(prev => [...prev, ...data as BibleMaterialLocation[]]);
+    } else if (type === 'sermon') {
+      const newSermons: Sermon[] = (data as any[]).map(s => {
+        const now = new Date().toISOString();
+        return {
+          ...s,
+          id: crypto.randomUUID(),
+          type: 'my',
+          createdAt: now,
+          updatedAt: now,
+        };
+      });
+      setSermons(prev => [...prev, ...newSermons]);
+    }
+    
+    setToast({ message: `변환된 ${data.length}개 항목을 추가했습니다. 변경사항을 저장하려면 '저장하기' 버튼을 누르세요.` });
+  };
+  
+  const selectedKeyword = useMemo(() => keywords.find(k => k.id === selectedKeywordId) || null, [keywords, selectedKeywordId]);
+  const materialsForBook = useMemo(() => bibleData.filter(loc => loc.book === selectedBook).sort((a,b) => a.chapterStart - b.chapterStart || (a.verseStart ?? 0) - (b.verseStart ?? 0)), [bibleData, selectedBook]);
+
+  // Save on Ctrl+S
+  useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+              e.preventDefault();
+              handleUpdateAndExport();
+          }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUpdateAndExport]);
+
+
+  if (!isAuthenticated) {
+    return <AuthScreen onPinVerify={handlePinVerify} />;
+  }
+
   return (
-    <>
-      <div className={`flex flex-col h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans`}>
-        <Header 
-            mode={mode} 
-            setMode={(m) => { setMode(m); setGlobalSearchTerm(''); }}
-            onOpenSettings={() => setIsSettingsModalOpen(true)}
-            onOpenUserGuide={() => setIsUserGuideModalOpen(true)}
-            onOpenAnnouncement={handleOpenAnnouncement}
-            gdrive={gdrive}
-            onSearch={handleGlobalSearch}
-            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-            isDataDirty={isDataDirty}
-            onUpdate={handleUnifiedExport}
-            isUpdateExport={isUpdateExport}
-            onImportAll={handleImportAllData}
-            hwpConversionEnabled={hwpConversionEnabled}
-            apiKey={apiKey}
-            clientId={clientId}
-        />
-        <main className="flex flex-1 overflow-hidden">
-          {renderMode()}
+    <div className={`flex flex-col h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100`}>
+      <Header
+        mode={mode}
+        setMode={setMode}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        onOpenUserGuide={() => setIsUserGuideModalOpen(true)}
+        onOpenAnnouncement={handleOpenAnnouncement}
+        gdrive={{ ...gdrive, isReady: gdrive.isReady && !!(apiKey && clientId) }}
+        onSearch={handleGlobalSearch}
+        onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+        isDataDirty={isDataDirty}
+        onUpdate={handleUpdateAndExport}
+        isUpdateExport={isUpdateExport}
+        onImportAll={handleImportAll}
+        hwpConversionEnabled={hwpConversionEnabled}
+        apiKey={apiKey}
+        clientId={clientId}
+      />
+
+      <div className={`flex flex-1 overflow-hidden transition-all duration-300`}>
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {mode === 'keyword' && (
+            <KeywordMode
+              keywords={keywords}
+              selectedKeyword={selectedKeyword}
+              selectedKeywordId={selectedKeywordId}
+              onSelectKeyword={setSelectedKeywordId}
+              onAddKeyword={handleAddKeyword}
+              onDeleteKeyword={handleDeleteKeyword}
+              onAddMaterial={() => handleOpenMaterialModal(null, { mode: 'keyword', selectedKeywordId })}
+              onEditMaterial={(material) => handleOpenMaterialModal(material, { mode: 'keyword', keywordId: selectedKeywordId })}
+              onDeleteMaterial={(materialId) => selectedKeywordId && handleDeleteKeywordMaterial(materialId, selectedKeywordId)}
+              isSidebarOpen={isSidebarOpen}
+              setIsSidebarOpen={setIsSidebarOpen}
+            />
+          )}
+          {mode === 'bible' && (
+            <BibleMode
+              selectedBook={selectedBook}
+              onSelectBook={setSelectedBook}
+              materialsForBook={materialsForBook}
+              bibleData={bibleData}
+              onUpdateBibleData={setBibleData}
+              onAddMaterial={(context) => handleOpenMaterialModal(null, { mode: 'bible', ...context })}
+              onEditMaterial={(material, location) => handleOpenMaterialModal(material, { mode: 'bible', locationId: location.id })}
+              onDeleteMaterial={handleDeleteBibleMaterial}
+              useAbbreviation={useAbbreviation}
+              isSidebarOpen={isSidebarOpen}
+              setIsSidebarOpen={setIsSidebarOpen}
+            />
+          )}
+          {mode === 'sermon' && (
+             <SermonMode
+                sermons={sermons}
+                onAddSermon={() => { setSermonToEdit(null); setIsSermonModalOpen(true); }}
+                onEditSermon={handleEditSermon}
+                onDeleteSermon={handleDeleteSermon}
+                initialSelectedSermonId={selectedSermonId}
+                isSidebarOpen={isSidebarOpen}
+                setIsSidebarOpen={setIsSidebarOpen}
+                useAbbreviation={useAbbreviation}
+            />
+          )}
+          {mode === 'search' && (
+            <GlobalSearchResults 
+                results={searchResults}
+                searchTerm={globalSearchTerm}
+                onClick={handleSearchResultClick}
+            />
+          )}
+          {mode === 'hwp' && hwpConversionEnabled && (
+            <HwpConvertMode
+                geminiApiKey={geminiApiKey}
+                onImportData={handleImportFromHwp}
+                hwpConversionEnabled={hwpConversionEnabled}
+                onOpenSettings={() => setIsSettingsModalOpen(true)}
+            />
+          )}
         </main>
       </div>
-      <AddEditMaterialModal
-        isOpen={isMaterialModalOpen}
-        onClose={() => setIsMaterialModalOpen(false)}
-        onSave={handleSaveMaterial}
-        materialToEdit={materialToEdit}
-        lastAddedMaterial={lastAddedMaterial}
-      />
-      <AddEditSermonModal 
-        isOpen={isSermonModalOpen}
-        onClose={() => setIsSermonModalOpen(false)}
-        onSave={handleSaveSermon}
-        sermonToEdit={sermonToEdit}
-      />
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        fontSize={fontSize}
-        setFontSize={setFontSize}
-        useAbbreviation={useAbbreviation}
-        setUseAbbreviation={setUseAbbreviation}
-        onSetPin={() => setIsPinModalOpen(true)}
-        pinEnabled={pinEnabled}
-        setPinEnabled={setPinEnabled}
-        hasPin={!!pinHash}
-        apiKey={apiKey}
-        setApiKey={setApiKey}
-        clientId={clientId}
-        setClientId={setClientId}
-        geminiApiKey={geminiApiKey}
-        setGeminiApiKey={setGeminiApiKey}
-        hwpConversionEnabled={hwpConversionEnabled}
-        setHwpConversionEnabled={setHwpConversionEnabled}
-        onOpenApiGuide={() => setIsApiGuideOpen(true)}
-        gdrive={gdrive}
-        isImportBackupAvailable={!!importBackup}
-        onRestoreFromImportBackup={handleRestoreFromImportBackup}
-        onExportAll={handleUnifiedExport}
-        onImportAll={handleImportAllData}
-        onDownloadTemplate={handleDownloadTemplateFile}
-        isUpdateExport={isUpdateExport}
-      />
-      <PinManagementModal 
-        isOpen={isPinModalOpen}
-        onClose={() => setIsPinModalOpen(false)}
-        onPinSet={handleSetPin}
-        pinHash={pinHash}
-      />
-      <GoogleApiGuideModal
-        isOpen={isApiGuideOpen}
-        onClose={() => setIsApiGuideOpen(false)}
-      />
-      <UserGuideModal
-        isOpen={isUserGuideModalOpen}
-        onClose={() => setIsUserGuideModalOpen(false)}
-      />
-      <AnnouncementModal
-        isOpen={isAnnouncementModalOpen}
-        onClose={handleCloseAnnouncement}
-        content={announcement?.content || ''}
-      />
-      <Toast />
-    </>
+
+      {isMaterialModalOpen && (
+        <AddEditMaterialModal
+          isOpen={isMaterialModalOpen}
+          onClose={() => { setIsMaterialModalOpen(false); setMaterialToEdit(null); setEditContext(null); }}
+          onSave={handleSaveMaterial}
+          materialToEdit={materialToEdit}
+          lastAddedMaterial={lastAddedMaterial}
+        />
+      )}
+      
+      {isSermonModalOpen && (
+        <AddEditSermonModal
+            isOpen={isSermonModalOpen}
+            onClose={() => { setIsSermonModalOpen(false); setSermonToEdit(null); }}
+            onSave={handleSaveSermon}
+            sermonToEdit={sermonToEdit}
+        />
+      )}
+
+      {isSettingsModalOpen && (
+        <SettingsModal
+            isOpen={isSettingsModalOpen}
+            onClose={() => setIsSettingsModalOpen(false)}
+            fontSize={fontSize}
+            setFontSize={setFontSize}
+            useAbbreviation={useAbbreviation}
+            setUseAbbreviation={setUseAbbreviation}
+            onSetPin={() => setIsPinModalOpen(true)}
+            pinEnabled={pinEnabled}
+            setPinEnabled={setPinEnabled}
+            hasPin={!!pinHash}
+            apiKey={apiKey}
+            setApiKey={setApiKey}
+            clientId={clientId}
+            setClientId={setClientId}
+            geminiApiKey={geminiApiKey}
+            setGeminiApiKey={setGeminiApiKey}
+            hwpConversionEnabled={hwpConversionEnabled}
+            setHwpConversionEnabled={setHwpConversionEnabled}
+            onOpenApiGuide={() => setIsApiGuideOpen(true)}
+            isImportBackupAvailable={!!importBackup}
+            onRestoreFromImportBackup={() => handleRestoreFromImportBackup()}
+            onExportAll={handleExportAll}
+            onImportAll={handleImportAll}
+            onDownloadTemplate={handleDownloadTemplate}
+            isUpdateExport={isUpdateExport}
+            gdrive={{...gdrive, isReady: gdrive.isReady && !!(apiKey && clientId)}}
+        />
+      )}
+      
+      {isPinModalOpen && (
+        <PinManagementModal
+            isOpen={isPinModalOpen}
+            onClose={() => setIsPinModalOpen(false)}
+            onPinSet={handleSetPin}
+            pinHash={pinHash}
+        />
+      )}
+      
+      {isApiGuideOpen && (
+        <GoogleApiGuideModal
+            isOpen={isApiGuideOpen}
+            onClose={() => setIsApiGuideOpen(false)}
+        />
+      )}
+
+      {isUserGuideModalOpen && (
+        <UserGuideModal
+          isOpen={isUserGuideModalOpen}
+          onClose={() => setIsUserGuideModalOpen(false)}
+        />
+      )}
+
+      {announcement && isAnnouncementModalOpen && (
+        <AnnouncementModal
+          isOpen={isAnnouncementModalOpen}
+          onClose={handleCloseAnnouncement}
+          content={announcement.content}
+        />
+      )}
+      
+      {toast && (
+        <div className="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
+            {toast.message}
+        </div>
+      )}
+    </div>
   );
 };
 

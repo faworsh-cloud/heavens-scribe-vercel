@@ -5,7 +5,6 @@ export interface Material {
   publicationInfo: string;
   pages: string;
   content: string;
-  contentImage?: string | null;
   createdAt: string;
 }
 

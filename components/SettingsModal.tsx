@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, InformationCircleIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, ChevronDownIcon } from './icons';
+import { UserProfile } from '../types';
 
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
 
@@ -39,6 +40,7 @@ interface SettingsModalProps {
     syncData: () => void;
     isBackupAvailable: boolean;
     restoreFromBackup: () => void;
+    userProfile: UserProfile | null;
   };
 }
 
@@ -129,7 +131,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 {isImportBackupAvailable ? (
                     <>
                         <p className="text-sm text-gray-700 dark:text-gray-300">
-                            HWP 변환을 통해 마지막으로 가져온 데이터를 되돌릴 수 있습니다.
+                            데이터를 잘못 가져온 경우, 가장 최근에 가져오기 전 상태로 복원할 수 있습니다.
                         </p>
                         <button 
                             onClick={onRestoreFromImportBackup} 
@@ -277,8 +279,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                            연결 끊기
                         </button>
                         :
-                        <button onClick={() => gdrive.handleSignIn()} disabled={!gdrive.isReady} className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 disabled:bg-gray-400">
-                           Google Drive에 연결
+                        <button onClick={() => gdrive.handleSignIn(gdrive.syncData)} disabled={!gdrive.isReady} className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 disabled:bg-gray-400">
+                           연결 및 동기화
                         </button>
                     }
                     <button onClick={gdrive.syncData} disabled={!gdrive.isSignedIn || gdrive.syncStatus === 'syncing'} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm hover:bg-gray-50 disabled:opacity-50">
