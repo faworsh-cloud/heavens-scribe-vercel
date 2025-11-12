@@ -37,6 +37,8 @@ export const useGoogleDrive = (
     const [userProfile, setUserProfile] = useLocalStorage<UserProfile | null>('user-profile', null);
     const signInSuccessCallback = useRef<(() => void) | null>(null);
     const isDriveClientInitialized = useRef(false);
+    const gapiScriptInjected = useRef(false);
+    const gsiScriptInjected = useRef(false);
 
     useEffect(() => {
         const backup = window.localStorage.getItem(BACKUP_KEY);
@@ -44,6 +46,9 @@ export const useGoogleDrive = (
     }, []);
 
     useEffect(() => {
+        if (gapiScriptInjected.current) return;
+        gapiScriptInjected.current = true;
+
         const script = document.createElement('script');
         script.src = "https://apis.google.com/js/api.js";
         script.async = true;
@@ -54,21 +59,18 @@ export const useGoogleDrive = (
             });
         };
         document.body.appendChild(script);
-        return () => {
-            document.body.removeChild(script);
-        }
     }, []);
 
     useEffect(() => {
+        if (gsiScriptInjected.current) return;
+        gsiScriptInjected.current = true;
+        
         const script = document.createElement('script');
         script.src = "https://accounts.google.com/gsi/client";
         script.async = true;
         script.defer = true;
         script.onload = () => setGsiReady(true);
         document.body.appendChild(script);
-         return () => {
-            document.body.removeChild(script);
-        }
     }, []);
 
     useEffect(() => {
@@ -153,14 +155,15 @@ export const useGoogleDrive = (
     const handleSignOut = useCallback(() => {
         const token = (window as any).gapi.client.getToken();
         if (token !== null) {
-            (window as any).google.accounts.oauth2.revoke(token.access_token, () => {});
+            if ((window as any).google?.accounts?.oauth2) {
+                (window as any).google.accounts.oauth2.revoke(token.access_token, () => {});
+            }
             (window as any).gapi.client.setToken(null);
             setIsSignedIn(false);
             setDriveFileId(null);
             setDriveFileName(null);
             setSyncStatus('idle');
             setUserProfile(null);
-            isDriveClientInitialized.current = false;
         }
     }, [setDriveFileId, setUserProfile]);
 
