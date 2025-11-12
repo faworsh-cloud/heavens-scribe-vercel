@@ -117,17 +117,26 @@ export const useGoogleDrive = (
 
     useEffect(() => {
         const initClient = async () => {
-            await (window as any).gapi.client.init({
-                apiKey: apiKey,
-                discoveryDocs: [DISCOVERY_DOC],
-            });
-            isDriveClientInitialized.current = true;
+            if (!apiKey) {
+                isDriveClientInitialized.current = false;
+                return;
+            }
+            try {
+                await (window as any).gapi.client.init({
+                    apiKey: apiKey,
+                    discoveryDocs: [DISCOVERY_DOC],
+                });
+                isDriveClientInitialized.current = true;
+                setSyncStatus(prev => prev === 'error' ? 'idle' : prev);
+            } catch (err) {
+                console.error("Error initializing GAPI client:", err);
+                isDriveClientInitialized.current = false;
+                setSyncStatus('error');
+            }
         };
 
-        if (gapiReady && apiKey && !isDriveClientInitialized.current) {
-            initClient().catch(err => {
-                console.error("Error initializing GAPI client:", err);
-            });
+        if (gapiReady) {
+            initClient();
         }
     }, [gapiReady, apiKey]);
 
@@ -236,6 +245,11 @@ export const useGoogleDrive = (
             return;
         }
 
+        if (syncStatus === 'error') {
+            alert('Google Drive 서비스 초기화에 실패했습니다. 설정에서 API 키를 확인해주세요.');
+            return;
+        }
+
         if (!isDriveClientInitialized.current) {
             alert('Google Drive 서비스가 초기화되는 중입니다. 잠시 후 다시 시도해주세요.');
             return;
@@ -317,7 +331,7 @@ export const useGoogleDrive = (
             setSyncStatus('error');
         }
     }, [
-        isSignedIn, apiKey, driveFileId, localKeywords, localBibleData, localSermons, localLastModified, 
+        isSignedIn, syncStatus, driveFileId, localKeywords, localBibleData, localSermons, localLastModified, 
         findFile, createFile, uploadData, downloadData, 
         setLocalKeywords, setLocalBibleData, setLocalSermons, setLocalLastModified
     ]);
