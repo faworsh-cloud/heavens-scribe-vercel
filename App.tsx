@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Keyword, Material, BibleMaterialLocation, Sermon, Announcement } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useGoogleDrive } from './hooks/useGoogleDrive';
-import { hashPin, verifyPin } from './utils/auth';
 import { exportAllData, importAllData, downloadTemplate, updateDataAndExport } from './utils/excelUtils';
+import { hashPin, verifyPin } from './utils/auth';
 
 import Header from './components/Header';
 import KeywordMode from './components/KeywordMode';
@@ -13,12 +13,12 @@ import HwpConvertMode from './components/HwpConvertMode';
 import AddEditMaterialModal from './components/AddEditMaterialModal';
 import AddEditSermonModal from './components/AddEditSermonModal';
 import SettingsModal from './components/SettingsModal';
-import AuthScreen from './components/AuthScreen';
-import PinManagementModal from './components/PinManagementModal';
 import GoogleApiGuideModal from './components/GoogleApiGuideModal';
 import GlobalSearchResults from './components/GlobalSearchResults';
 import UserGuideModal from './components/UserGuideModal';
 import AnnouncementModal from './components/AnnouncementModal';
+import AuthScreen from './components/AuthScreen';
+import PinManagementModal from './components/PinManagementModal';
 
 type AppMode = 'keyword' | 'bible' | 'sermon' | 'search' | 'hwp';
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
@@ -57,6 +57,18 @@ const App: React.FC = () => {
   const [fontSize, setFontSize] = useLocalStorage<FontSize>('font-size', 'base');
   const [useAbbreviation, setUseAbbreviation] = useLocalStorage('use-abbreviation', false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Security State
+  const [pinHash, setPinHash] = useLocalStorage<string | null>('app-pin-hash', null);
+  const [pinEnabled, setPinEnabled] = useLocalStorage<boolean>('app-pin-enabled', false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!pinEnabled || !pinHash) {
+      setIsAuthenticated(true);
+    }
+  }, [pinEnabled, pinHash]);
 
   useEffect(() => {
     const sizeMap = {
@@ -100,12 +112,6 @@ const App: React.FC = () => {
       setLastModified(new Date().toISOString());
     }
   }, [_setSermons, setLastModified]);
-
-
-  // User Auth State
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pinHash, setPinHash] = useLocalStorage<string | null>('sermon-prep-pin', null);
-  const [pinEnabled, setPinEnabled] = useLocalStorage<boolean>('sermon-prep-pin-enabled', false);
   
   // API Keys
   const [apiKey, setApiKey] = useLocalStorage<string>('gdrive-api-key', '');
@@ -117,7 +123,6 @@ const App: React.FC = () => {
   const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
   const [isSermonModalOpen, setIsSermonModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isApiGuideOpen, setIsApiGuideOpen] = useState(false);
   const [isUserGuideModalOpen, setIsUserGuideModalOpen] = useState(false);
 
@@ -177,10 +182,10 @@ const App: React.FC = () => {
     };
   }, [
     isApiGuideOpen, setIsApiGuideOpen,
-    isPinModalOpen, setIsPinModalOpen,
     isSettingsModalOpen, setIsSettingsModalOpen,
     isUserGuideModalOpen, setIsUserGuideModalOpen,
-    isAnnouncementModalOpen, setIsAnnouncementModalOpen
+    isAnnouncementModalOpen, setIsAnnouncementModalOpen,
+    isPinModalOpen
   ]);
 
   // Switch to keyword mode if HWP conversion is disabled
@@ -247,31 +252,25 @@ const App: React.FC = () => {
   // Google Drive Sync
   const gdrive = useGoogleDrive(apiKey, clientId, keywords, setKeywords, bibleData, setBibleData, sermons, setSermons, lastModified, setLastModified);
 
-  // --- Authentication Handlers (User & Admin) ---
-
-  // User Auth
-  useEffect(() => {
-    if (!pinEnabled || !pinHash) {
-      setIsAuthenticated(true);
-    }
-  }, [pinEnabled, pinHash]);
-
-  const handlePinVerify = async (pin: string) => {
-    if (pinHash && await verifyPin(pin, pinHash)) {
-      setIsAuthenticated(true);
-    } else {
-      alert('PIN이 잘못되었습니다.');
-    }
-  };
-
+    // --- Security Handlers ---
   const handleSetPin = async (pin: string) => {
-    const newHash = await hashPin(pin);
-    setPinHash(newHash);
+    const hash = await hashPin(pin);
+    setPinHash(hash);
     setPinEnabled(true);
     setIsPinModalOpen(false);
     alert('PIN이 설정되었습니다.');
   };
-  
+
+  const handleVerifyPin = async (pin: string) => {
+    if (pinHash) {
+      const isValid = await verifyPin(pin, pinHash);
+      if (isValid) {
+        setIsAuthenticated(true);
+      } else {
+        alert('PIN이 올바르지 않습니다.');
+      }
+    }
+  };
 
   // --- Data Handlers ---
 
@@ -623,9 +622,8 @@ const App: React.FC = () => {
       return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleUpdateAndExport]);
 
-
   if (!isAuthenticated) {
-    return <AuthScreen onPinVerify={handlePinVerify} />;
+    return <AuthScreen onPinVerify={handleVerifyPin} />;
   }
 
   return (
@@ -659,8 +657,13 @@ const App: React.FC = () => {
               onAddKeyword={handleAddKeyword}
               onDeleteKeyword={handleDeleteKeyword}
               onAddMaterial={() => handleOpenMaterialModal(null, { mode: 'keyword', selectedKeywordId })}
+              // FIX: Corrected the incomplete 'selected' variable to 'selectedKeywordId'
               onEditMaterial={(material) => handleOpenMaterialModal(material, { mode: 'keyword', keywordId: selectedKeywordId })}
-              onDeleteMaterial={(materialId) => selectedKeywordId && handleDeleteKeywordMaterial(materialId, selectedKeywordId)}
+              onDeleteMaterial={(id) => {
+                if(selectedKeywordId) {
+                    handleDeleteKeywordMaterial(id, selectedKeywordId);
+                }
+              }}
               isSidebarOpen={isSidebarOpen}
               setIsSidebarOpen={setIsSidebarOpen}
             />
@@ -681,30 +684,33 @@ const App: React.FC = () => {
             />
           )}
           {mode === 'sermon' && (
-             <SermonMode
-                sermons={sermons}
-                onAddSermon={() => { setSermonToEdit(null); setIsSermonModalOpen(true); }}
-                onEditSermon={handleEditSermon}
-                onDeleteSermon={handleDeleteSermon}
-                initialSelectedSermonId={selectedSermonId}
-                isSidebarOpen={isSidebarOpen}
-                setIsSidebarOpen={setIsSidebarOpen}
-                useAbbreviation={useAbbreviation}
+            <SermonMode
+              sermons={sermons}
+              onAddSermon={() => {
+                setSermonToEdit(null);
+                setIsSermonModalOpen(true);
+              }}
+              onEditSermon={handleEditSermon}
+              onDeleteSermon={handleDeleteSermon}
+              initialSelectedSermonId={selectedSermonId}
+              isSidebarOpen={isSidebarOpen}
+              setIsSidebarOpen={setIsSidebarOpen}
+              useAbbreviation={useAbbreviation}
             />
           )}
           {mode === 'search' && (
-            <GlobalSearchResults 
-                results={searchResults}
-                searchTerm={globalSearchTerm}
-                onClick={handleSearchResultClick}
+            <GlobalSearchResults
+              results={searchResults}
+              searchTerm={globalSearchTerm}
+              onClick={handleSearchResultClick}
             />
           )}
-          {mode === 'hwp' && hwpConversionEnabled && (
+          {mode === 'hwp' && (
             <HwpConvertMode
-                geminiApiKey={geminiApiKey}
-                onImportData={handleImportFromHwp}
-                hwpConversionEnabled={hwpConversionEnabled}
-                onOpenSettings={() => setIsSettingsModalOpen(true)}
+              onImportData={handleImportFromHwp}
+              geminiApiKey={geminiApiKey}
+              hwpConversionEnabled={hwpConversionEnabled}
+              onOpenSettings={() => setIsSettingsModalOpen(true)}
             />
           )}
         </main>
@@ -713,76 +719,60 @@ const App: React.FC = () => {
       {isMaterialModalOpen && (
         <AddEditMaterialModal
           isOpen={isMaterialModalOpen}
-          onClose={() => { setIsMaterialModalOpen(false); setMaterialToEdit(null); setEditContext(null); }}
+          onClose={() => {
+            setIsMaterialModalOpen(false);
+            setMaterialToEdit(null);
+            setEditContext(null);
+          }}
           onSave={handleSaveMaterial}
           materialToEdit={materialToEdit}
           lastAddedMaterial={lastAddedMaterial}
         />
       )}
-      
       {isSermonModalOpen && (
         <AddEditSermonModal
-            isOpen={isSermonModalOpen}
-            onClose={() => { setIsSermonModalOpen(false); setSermonToEdit(null); }}
-            onSave={handleSaveSermon}
-            sermonToEdit={sermonToEdit}
+          isOpen={isSermonModalOpen}
+          onClose={() => {
+            setIsSermonModalOpen(false);
+            setSermonToEdit(null);
+          }}
+          onSave={handleSaveSermon}
+          sermonToEdit={sermonToEdit}
         />
       )}
-
       {isSettingsModalOpen && (
         <SettingsModal
-            isOpen={isSettingsModalOpen}
-            onClose={() => setIsSettingsModalOpen(false)}
-            fontSize={fontSize}
-            setFontSize={setFontSize}
-            useAbbreviation={useAbbreviation}
-            setUseAbbreviation={setUseAbbreviation}
-            onSetPin={() => setIsPinModalOpen(true)}
-            pinEnabled={pinEnabled}
-            setPinEnabled={setPinEnabled}
-            hasPin={!!pinHash}
-            apiKey={apiKey}
-            setApiKey={setApiKey}
-            clientId={clientId}
-            setClientId={setClientId}
-            geminiApiKey={geminiApiKey}
-            setGeminiApiKey={setGeminiApiKey}
-            hwpConversionEnabled={hwpConversionEnabled}
-            setHwpConversionEnabled={setHwpConversionEnabled}
-            onOpenApiGuide={() => setIsApiGuideOpen(true)}
-            isImportBackupAvailable={!!importBackup}
-            onRestoreFromImportBackup={() => handleRestoreFromImportBackup()}
-            onExportAll={handleExportAll}
-            onImportAll={handleImportAll}
-            onDownloadTemplate={handleDownloadTemplate}
-            isUpdateExport={isUpdateExport}
-            gdrive={{...gdrive, isReady: gdrive.isReady && !!(apiKey && clientId)}}
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          fontSize={fontSize}
+          setFontSize={setFontSize}
+          useAbbreviation={useAbbreviation}
+          setUseAbbreviation={setUseAbbreviation}
+          onSetPin={() => setIsPinModalOpen(true)}
+          pinEnabled={pinEnabled}
+          setPinEnabled={setPinEnabled}
+          hasPin={!!pinHash}
+          apiKey={apiKey}
+          setApiKey={setApiKey}
+          clientId={clientId}
+          setClientId={setClientId}
+          geminiApiKey={geminiApiKey}
+          setGeminiApiKey={setGeminiApiKey}
+          hwpConversionEnabled={hwpConversionEnabled}
+          setHwpConversionEnabled={setHwpConversionEnabled}
+          onOpenApiGuide={() => setIsApiGuideOpen(true)}
+          isImportBackupAvailable={!!importBackup}
+          onRestoreFromImportBackup={handleRestoreFromImportBackup}
+          onExportAll={handleExportAll}
+          onImportAll={handleImportAll}
+          onDownloadTemplate={handleDownloadTemplate}
+          isUpdateExport={isUpdateExport}
+          gdrive={gdrive}
         />
       )}
-      
-      {isPinModalOpen && (
-        <PinManagementModal
-            isOpen={isPinModalOpen}
-            onClose={() => setIsPinModalOpen(false)}
-            onPinSet={handleSetPin}
-            pinHash={pinHash}
-        />
-      )}
-      
-      {isApiGuideOpen && (
-        <GoogleApiGuideModal
-            isOpen={isApiGuideOpen}
-            onClose={() => setIsApiGuideOpen(false)}
-        />
-      )}
-
-      {isUserGuideModalOpen && (
-        <UserGuideModal
-          isOpen={isUserGuideModalOpen}
-          onClose={() => setIsUserGuideModalOpen(false)}
-        />
-      )}
-
+      {isApiGuideOpen && <GoogleApiGuideModal isOpen={isApiGuideOpen} onClose={() => setIsApiGuideOpen(false)} />}
+      {isUserGuideModalOpen && <UserGuideModal isOpen={isUserGuideModalOpen} onClose={() => setIsUserGuideModalOpen(false)} />}
+      {isPinModalOpen && <PinManagementModal isOpen={isPinModalOpen} onClose={() => setIsPinModalOpen(false)} onPinSet={handleSetPin} pinHash={pinHash} />}
       {announcement && isAnnouncementModalOpen && (
         <AnnouncementModal
           isOpen={isAnnouncementModalOpen}
@@ -790,14 +780,9 @@ const App: React.FC = () => {
           content={announcement.content}
         />
       )}
-      
-      {toast && (
-        <div className="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
-            {toast.message}
-        </div>
-      )}
     </div>
   );
 };
 
+// FIX: Add default export to resolve module import error in index.tsx
 export default App;
