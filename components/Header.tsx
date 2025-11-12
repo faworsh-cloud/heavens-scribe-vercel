@@ -11,10 +11,14 @@ interface HeaderProps {
   gdrive: {
     isSignedIn: boolean;
     syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
-    handleSignIn: () => void;
+    handleSignIn: (onSuccess?: () => void) => void;
     handleSignOut: () => void;
     syncData: () => void;
     userProfile: UserProfile | null;
+    isReady: boolean;
+    driveFileName: string | null;
+    isBackupAvailable: boolean;
+    restoreFromBackup: () => void;
   };
   onSearch: (term: string) => void;
   onToggleSidebar: () => void;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon, InformationCircleIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, ChevronDownIcon } from './icons';
+import { UserProfile } from '../types';
 
 type FontSize = 'sm' | 'base' | 'lg' | 'xl';
 
@@ -39,6 +40,7 @@ interface SettingsModalProps {
     syncData: () => void;
     isBackupAvailable: boolean;
     restoreFromBackup: () => void;
+    userProfile: UserProfile | null;
   };
 }
 
