@@ -12,12 +12,16 @@ export const useLocalStorage = <T,>(key: string, initialValue: T): [T, Dispatch<
   });
 
   const setValue = (value: T | ((val: T) => T)) => {
+    const previousValue = storedValue;
     try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      const valueToStore = value instanceof Function ? value(previousValue) : value;
       setStoredValue(valueToStore);
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
-      console.error(error);
+      console.error("Local storage save error:", error);
+      // Revert state on error to keep UI consistent with storage
+      setStoredValue(previousValue);
+      throw error; // Re-throw the error to be handled by the caller
     }
   };
 

@@ -312,70 +312,85 @@ const App: React.FC = () => {
 
   // Generic Material Save Handler
   const handleSaveMaterial = (materialData: Omit<Material, 'id' | 'createdAt'>, id?: string) => {
-    setLastAddedMaterial(materialData);
-    const context = editContext || { mode, selectedKeywordId, selectedBook };
-    
-    if (context.mode === 'keyword') {
-      const keywordId = context.keywordId || context.selectedKeywordId;
-      if (!keywordId) return;
-      setKeywords(prev => prev.map(kw => {
-        if (kw.id === keywordId) {
-          const updatedMaterials = materialToEdit
-            ? kw.materials.map(m => m.id === materialToEdit.id ? { ...m, ...materialData } : m)
-            : [...kw.materials, { ...materialData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }];
-          return { ...kw, materials: updatedMaterials, updatedAt: new Date().toISOString() };
+    try {
+      setLastAddedMaterial(materialData);
+      const context = editContext || { mode, selectedKeywordId, selectedBook };
+      
+      if (context.mode === 'keyword') {
+        const keywordId = context.keywordId || context.selectedKeywordId;
+        if (!keywordId) return;
+        setKeywords(prev => prev.map(kw => {
+          if (kw.id === keywordId) {
+            const updatedMaterials = materialToEdit
+              ? kw.materials.map(m => m.id === materialToEdit.id ? { ...m, ...materialData } : m)
+              : [...kw.materials, { ...materialData, id: crypto.randomUUID(), createdAt: new Date().toISOString() }];
+            return { ...kw, materials: updatedMaterials, updatedAt: new Date().toISOString() };
+          }
+          return kw;
+        }));
+      } else if (context.mode === 'bible') {
+         const newMaterial: Material = { ...materialData, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
+         if (materialToEdit) { // Editing existing material
+              setBibleData(prev => prev.map(loc => {
+                  if(loc.id === context.locationId) {
+                      return {
+                          ...loc,
+                          materials: loc.materials.map(m => m.id === materialToEdit.id ? {...m, ...materialData} : m),
+                          updatedAt: new Date().toISOString()
+                      }
+                  }
+                  return loc;
+              }));
+         } else { // Adding new material
+              const existingLocation = bibleData.find(l => 
+                  l.book === context.book &&
+                  l.chapterStart === context.chapterStart &&
+                  l.verseStart === context.verseStart &&
+                  l.chapterEnd === context.chapterEnd &&
+                  l.verseEnd === context.verseEnd
+              );
+
+              if (existingLocation) {
+                   setBibleData(prev => prev.map(loc => loc.id === existingLocation.id ? { ...loc, materials: [...loc.materials, newMaterial], updatedAt: new Date().toISOString() } : loc));
+              } else {
+                  const now = new Date().toISOString();
+                  const newLocation: BibleMaterialLocation = {
+                      id: crypto.randomUUID(),
+                      createdAt: now,
+                      updatedAt: now,
+                      book: context.book,
+                      chapterStart: context.chapterStart,
+                      verseStart: context.verseStart,
+                      chapterEnd: context.chapterEnd,
+                      verseEnd: context.verseEnd,
+                      materials: [newMaterial]
+                  };
+                  setBibleData(prev => [...prev, newLocation]);
+              }
+         }
+      }
+
+      setIsMaterialModalOpen(false);
+      setMaterialToEdit(null);
+      setEditContext(null);
+    } catch (e: any) {
+        // Check for QuotaExceededError in a cross-browser way
+        const isQuotaError = e.name === 'QuotaExceededError' || 
+                              (e.code && (e.code === 22 || e.code === 1014)) || // DOMException codes
+                              (e.message && e.message.toLowerCase().includes('quota'));
+
+        if (isQuotaError) {
+            alert('오류: 저장 공간 부족\n\n브라우저의 저장 공간(Local Storage)이 가득 찼습니다. 보통 5MB로 제한됩니다.\n\n해결 방법:\n- 용량이 큰 이미지를 삭제하거나\n- 일부 데이터를 엑셀로 내보내기한 후 앱에서 삭제하여 공간을 확보해주세요.');
+        } else {
+            alert('데이터 저장 중 예상치 못한 오류가 발생했습니다.');
+            console.error(e);
         }
-        return kw;
-      }));
-    } else if (context.mode === 'bible') {
-       const newMaterial: Material = { ...materialData, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
-       if (materialToEdit) { // Editing existing material
-            setBibleData(prev => prev.map(loc => {
-                if(loc.id === context.locationId) {
-                    return {
-                        ...loc,
-                        materials: loc.materials.map(m => m.id === materialToEdit.id ? {...m, ...materialData} : m),
-                        updatedAt: new Date().toISOString()
-                    }
-                }
-                return loc;
-            }));
-       } else { // Adding new material
-            const existingLocation = bibleData.find(l => 
-                l.book === context.book &&
-                l.chapterStart === context.chapterStart &&
-                l.verseStart === context.verseStart &&
-                l.chapterEnd === context.chapterEnd &&
-                l.verseEnd === context.verseEnd
-            );
-
-            if (existingLocation) {
-                 setBibleData(prev => prev.map(loc => loc.id === existingLocation.id ? { ...loc, materials: [...loc.materials, newMaterial], updatedAt: new Date().toISOString() } : loc));
-            } else {
-                const now = new Date().toISOString();
-                const newLocation: BibleMaterialLocation = {
-                    id: crypto.randomUUID(),
-                    createdAt: now,
-                    updatedAt: now,
-                    book: context.book,
-                    chapterStart: context.chapterStart,
-                    verseStart: context.verseStart,
-                    chapterEnd: context.chapterEnd,
-                    verseEnd: context.verseEnd,
-                    materials: [newMaterial]
-                };
-                setBibleData(prev => [...prev, newLocation]);
-            }
-       }
     }
-
-    setIsMaterialModalOpen(false);
-    setMaterialToEdit(null);
-    setEditContext(null);
   };
 
   // Sermon Handlers
   const handleSaveSermon = (sermonData: Omit<Sermon, 'id' | 'createdAt' | 'updatedAt'>, id?: string) => {
+    try {
       const now = new Date().toISOString();
       if (sermonToEdit) {
           setSermons(prev => prev.map(s => s.id === sermonToEdit.id ? { ...s, ...sermonData, updatedAt: now } : s));
@@ -385,6 +400,18 @@ const App: React.FC = () => {
       }
       setIsSermonModalOpen(false);
       setSermonToEdit(null);
+    } catch (e: any) {
+        const isQuotaError = e.name === 'QuotaExceededError' || 
+                              (e.code && (e.code === 22 || e.code === 1014)) ||
+                              (e.message && e.message.toLowerCase().includes('quota'));
+
+        if (isQuotaError) {
+            alert('오류: 저장 공간 부족\n\n브라우저의 저장 공간(Local Storage)이 가득 찼습니다. 보통 5MB로 제한됩니다.\n\n해결 방법:\n- 일부 데이터를 엑셀로 내보내기한 후 앱에서 삭제하여 공간을 확보해주세요.');
+        } else {
+            alert('데이터 저장 중 예상치 못한 오류가 발생했습니다.');
+            console.error(e);
+        }
+    }
   };
 
   const handleDeleteSermon = (id: string) => {
@@ -433,6 +460,7 @@ const App: React.FC = () => {
             // FIX: The destructuring with a type cast was causing a TypeScript error. Replaced with direct property access for safer type handling.
             // FIX: Replaced spread destructuring with direct property access to resolve type errors.
             // The spread operator on an `any` type was causing issues with strict compiler settings.
+            // FIX: Replace spread destructuring with direct property access to resolve type error on 'any' type.
             const keyword = (item as ImportedKeyword).keyword;
             const materials = (item as ImportedKeyword).materials;
 
