@@ -448,21 +448,17 @@ const App: React.FC = () => {
         const keywordsMap = new Map(currentKeywords.map(k => [k.name, k]));
         
         for (const item of importedKeywords) {
-          // FIX: Add a type guard to safely handle imported data, preventing errors from malformed entries.
           if (
             item &&
             typeof item === 'object' &&
             'keyword' in item &&
-            typeof (item as any).keyword === 'string' &&
+            typeof item.keyword === 'string' &&
             'materials' in item &&
-            Array.isArray((item as any).materials)
+            Array.isArray(item.materials)
           ) {
-            // FIX: The destructuring with a type cast was causing a TypeScript error. Replaced with direct property access for safer type handling.
-            // FIX: Replaced spread destructuring with direct property access to resolve type errors.
-            // The spread operator on an `any` type was causing issues with strict compiler settings.
-            // FIX: Replace spread destructuring with direct property access to resolve type error on 'any' type.
-            const keyword = (item as ImportedKeyword).keyword;
-            const materials = (item as ImportedKeyword).materials;
+            // FIX: Destructure item with a type assertion after validation to ensure type safety.
+            // This resolves issues with 'unknown' type and potential spread errors on non-objects.
+            const { keyword, materials } = item as ImportedKeyword;
 
             if (!keyword) {
               continue;
@@ -471,12 +467,12 @@ const App: React.FC = () => {
             const newMaterials = materials
               .filter(m => typeof m === 'object' && m !== null) // Ensure materials are objects
               .map((m) => ({
-                bookTitle: (m as any).bookTitle || '',
-                author: (m as any).author || '',
-                publicationInfo: (m as any).publicationInfo || '',
-                pages: (m as any).pages || '',
-                content: (m as any).content || '',
-                contentImage: (m as any).contentImage || null,
+                bookTitle: m.bookTitle || '',
+                author: m.author || '',
+                publicationInfo: m.publicationInfo || '',
+                pages: m.pages || '',
+                content: m.content || '',
+                contentImage: m.contentImage || null,
                 id: crypto.randomUUID(),
                 createdAt: new Date().toISOString()
               }));

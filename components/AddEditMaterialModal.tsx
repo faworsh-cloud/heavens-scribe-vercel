@@ -18,6 +18,7 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
   const [content, setContent] = useState('');
   const [contentImage, setContentImage] = useState<string | null>(null);
   const [shouldUseLast, setShouldUseLast] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     if (materialToEdit) {
@@ -93,9 +94,8 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
   }, [isOpen, materialToEdit, lastAddedMaterial, toggleUseLastInfo, useLastInfoExceptContent]);
 
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const processFile = (file: File | null | undefined) => {
+    if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onloadend = () => {
             setContentImage(reader.result as string);
@@ -103,6 +103,30 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
         reader.readAsDataURL(file);
     }
   };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    processFile(e.target.files?.[0]);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    processFile(e.dataTransfer.files?.[0]);
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,7 +223,12 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     이미지 첨부
                 </label>
-                <div className="mt-1 flex items-center justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md">
+                <div 
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`mt-1 flex items-center justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md transition-colors ${isDragging ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : ''}`}
+                >
                     <div className="space-y-1 text-center">
                         {contentImage ? (
                             <div>
