@@ -459,10 +459,8 @@ const App: React.FC = () => {
             'materials' in item &&
             Array.isArray(item.materials)
           ) {
-            // FIX: The type assertion was causing a compilation error.
-            // Since `item` is of type `any` and has been type-guarded,
-            // we can safely destructure without the assertion.
-            const { keyword, materials } = item;
+            // FIX: The type guard ensures `item` is a valid object. We can safely cast and destructure its properties.
+            const { keyword, materials } = item as ImportedKeyword;
 
             if (!keyword) {
               continue;
