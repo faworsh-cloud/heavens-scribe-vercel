@@ -97,7 +97,7 @@ const Header: React.FC<HeaderProps> = ({ mode, setMode, onOpenSettings, onOpenUs
 
   const syncIndicatorColor = {
     idle: 'text-gray-400',
-    syncing: 'text-yellow-400 animate-pulse',
+    syncing: 'text-orange-500 animate-pulse',
     synced: 'text-green-400',
     error: 'text-red-400',
   };

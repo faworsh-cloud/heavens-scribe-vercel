@@ -146,7 +146,7 @@ export const useGoogleDrive = (
             if (onSuccess) {
               signInSuccessCallback.current = onSuccess;
             }
-            tokenClient.requestAccessToken({prompt: ''});
+            tokenClient.requestAccessToken();
         } else {
             alert('Google 로그인 서비스가 준비되지 않았습니다. Client ID가 올바르게 설정되었는지 확인 후 잠시 뒤 다시 시도해주세요.');
         }
@@ -329,16 +329,18 @@ export const useGoogleDrive = (
         } catch (error: any) {
             console.error('Sync failed:', error);
             if (error.result?.error?.code === 401 || error.result?.error?.code === 403) {
-                alert('Google Drive 접근 권한이 없습니다. 다시 로그인해주세요.');
-                handleSignOut(); // Automatically sign out to force re-authentication
+                (window as any).gapi.client.setToken(null);
+                setIsSignedIn(false);
+                setSyncStatus('error');
+                alert('Google Drive 접근 권한이 없거나 만료되었습니다. 다시 로그인하여 권한을 갱신해주세요.');
             } else {
                 alert('동기화 중 오류가 발생했습니다. API 키와 Client ID가 올바른지, 인터넷 연결이 정상적인지 확인해주세요.');
+                setSyncStatus('error');
             }
-            setSyncStatus('error');
         }
     }, [
         isSignedIn, syncStatus, driveFileId, localKeywords, localBibleData, localSermons, localLastModified, 
-        findFile, createFile, uploadData, downloadData, handleSignOut,
+        findFile, createFile, uploadData, downloadData,
         setLocalKeywords, setLocalBibleData, setLocalSermons, setLocalLastModified
     ]);
 

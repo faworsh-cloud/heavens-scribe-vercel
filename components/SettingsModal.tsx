@@ -279,8 +279,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                            연결 끊기
                         </button>
                         :
-                        <button onClick={() => gdrive.handleSignIn()} disabled={!gdrive.isReady} className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 disabled:bg-gray-400">
-                           Google Drive에 연결
+                        <button onClick={() => gdrive.handleSignIn(gdrive.syncData)} disabled={!gdrive.isReady} className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 disabled:bg-gray-400">
+                           연결 및 동기화
                         </button>
                     }
                     <button onClick={gdrive.syncData} disabled={!gdrive.isSignedIn || gdrive.syncStatus === 'syncing'} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm hover:bg-gray-50 disabled:opacity-50">
