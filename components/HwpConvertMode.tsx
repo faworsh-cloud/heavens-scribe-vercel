@@ -56,8 +56,7 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
         );
       }
     
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+    const handleFile = (file: File | undefined | null) => {
         if (file && file.type.startsWith('image/')) {
             setUploadedImage(file);
             if (imagePreviewUrl) {
@@ -67,10 +66,24 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
             setHwpContent('');
             setError(null);
             setPreviewData(null);
-        } else {
+        } else if (file) { // if a file is present but not an image
             setError('이미지 파일(jpg, png 등)을 선택해주세요.');
         }
+    };
+
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        handleFile(e.target.files?.[0]);
         e.target.value = '';
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+        e.preventDefault();
+        if (isLoading || isOcrLoading) return;
+        handleFile(e.dataTransfer.files?.[0]);
     };
 
     const handleRemoveImage = () => {
@@ -681,7 +694,12 @@ ${hwpContent}`;
                         </label>
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor="image-upload" className="relative cursor-pointer bg-white dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col justify-center items-center w-full h-40 p-4 text-center text-gray-500 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 transition-colors">
+                                <label
+                                    htmlFor="image-upload"
+                                    className="relative cursor-pointer bg-white dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col justify-center items-center w-full h-40 p-4 text-center text-gray-500 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 transition-colors"
+                                    onDragOver={handleDragOver}
+                                    onDrop={handleDrop}
+                                >
                                     <ArrowUpTrayIcon className="w-8 h-8 mx-auto mb-2"/>
                                     <span className="font-semibold">이미지 파일 선택</span>
                                     <span className="text-xs">또는 파일을 여기로 드래그하세요</span>
