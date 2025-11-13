@@ -643,10 +643,13 @@ ${hwpContent}`;
                         </label>
                         <div className="space-y-4">
                             <div>
-                                <label htmlFor="image-upload" className="relative cursor-pointer bg-white dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col justify-center items-center w-full h-32 text-center text-gray-500 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 transition-colors">
+                                <label htmlFor="image-upload" className="relative cursor-pointer bg-white dark:bg-gray-700/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col justify-center items-center w-full h-40 p-4 text-center text-gray-500 dark:text-gray-400 hover:border-primary-400 dark:hover:border-primary-500 transition-colors">
                                     <ArrowUpTrayIcon className="w-8 h-8 mx-auto mb-2"/>
                                     <span className="font-semibold">이미지 파일 선택</span>
                                     <span className="text-xs">또는 파일을 여기로 드래그하세요</span>
+                                    <span className="text-xs mt-2 text-gray-400 dark:text-gray-500">
+                                        AI가 이미지 속 텍스트를 인식하여 아래 입력창에 자동으로 채워줍니다.
+                                    </span>
                                     <input id="image-upload" name="image-upload" type="file" className="sr-only" accept="image/*" onChange={handleImageSelect} disabled={isLoading || isOcrLoading} />
                                 </label>
                             </div>
