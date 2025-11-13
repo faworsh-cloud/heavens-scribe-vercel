@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { GoogleGenAI } from "@google/genai";
 import { Material } from '../types';
-import { XMarkIcon } from './icons';
+import { XMarkIcon, PhotoIcon } from './icons';
 
 interface AddEditMaterialModalProps {
   isOpen: boolean;
@@ -8,15 +9,34 @@ interface AddEditMaterialModalProps {
   onSave: (material: Omit<Material, 'id' | 'createdAt'>, id?: string) => void;
   materialToEdit?: Material | null;
   lastAddedMaterial?: Omit<Material, 'id' | 'createdAt'> | null;
+  geminiApiKey: string;
 }
 
-const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onClose, onSave, materialToEdit, lastAddedMaterial }) => {
+const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64String = reader.result as string;
+            resolve(base64String.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+};
+
+const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onClose, onSave, materialToEdit, lastAddedMaterial, geminiApiKey }) => {
   const [bookTitle, setBookTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [publicationInfo, setPublicationInfo] = useState('');
   const [pages, setPages] = useState('');
   const [content, setContent] = useState('');
   const [shouldUseLast, setShouldUseLast] = useState(false);
+
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [isOcrLoading, setIsOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (materialToEdit) {
@@ -33,6 +53,7 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
       setContent('');
     }
     setShouldUseLast(false);
+    handleRemoveImage();
   }, [materialToEdit, isOpen]);
   
   const toggleUseLastInfo = useCallback(() => {
@@ -79,7 +100,7 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
         useLastInfoExceptContent();
       }
     };
-
+    
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -94,6 +115,120 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
     }
     onSave({ bookTitle, author, publicationInfo, pages, content }, materialToEdit?.id);
   };
+  
+    // --- OCR Handlers ---
+  const handleFile = useCallback((file: File | undefined | null) => {
+    if (file && file.type.startsWith('image/')) {
+        setUploadedImage(file);
+        if (imagePreviewUrl) {
+            URL.revokeObjectURL(imagePreviewUrl);
+        }
+        setImagePreviewUrl(URL.createObjectURL(file));
+        setOcrError(null);
+    } else if (file) {
+        setOcrError('이미지 파일(jpg, png 등)을 선택해주세요.');
+    }
+  }, [imagePreviewUrl]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePaste = (event: ClipboardEvent) => {
+        if (isOcrLoading) return;
+        const items = event.clipboardData?.items;
+        if (!items) return;
+
+        let imageFile: File | null = null;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.startsWith('image/')) {
+                const blob = items[i].getAsFile();
+                if (blob) {
+                    const extension = blob.type.split('/')[1] || 'png';
+                    imageFile = new File([blob], `pasted-image-${Date.now()}.${extension}`, { type: blob.type });
+                    break; 
+                }
+            }
+        }
+        
+        if (imageFile) {
+            event.preventDefault();
+            handleFile(imageFile);
+        }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [isOpen, handleFile, isOcrLoading]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleFile(e.target.files?.[0]);
+      e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
+      e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
+      e.preventDefault();
+      if (isOcrLoading) return;
+      handleFile(e.dataTransfer.files?.[0]);
+  };
+
+  const handleRemoveImage = () => {
+      if (imagePreviewUrl) {
+          URL.revokeObjectURL(imagePreviewUrl);
+      }
+      setUploadedImage(null);
+      setImagePreviewUrl(null);
+      setOcrError(null);
+  };
+
+  const handleOcr = async () => {
+    if (!uploadedImage) {
+        setOcrError('먼저 이미지 파일을 업로드해주세요.');
+        return;
+    }
+    if (!geminiApiKey) {
+        setOcrError('Gemini API 키가 설정되지 않았습니다. 설정에서 API 키를 입력해주세요.');
+        return;
+    }
+
+    setIsOcrLoading(true);
+    setOcrError(null);
+
+    try {
+        const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+        const base64Data = await blobToBase64(uploadedImage);
+        
+        const imagePart = {
+            inlineData: {
+                mimeType: uploadedImage.type,
+                data: base64Data,
+            },
+        };
+
+        const textPart = {
+            text: "Extract all Korean text from the image. Preserve the original line breaks and formatting as much as possible."
+        };
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: { parts: [imagePart, textPart] },
+        });
+
+        const extractedText = response.text;
+        setContent(prev => prev.trim() ? `${prev.trim()}\n\n${extractedText}` : extractedText);
+        handleRemoveImage();
+
+    } catch (e) {
+        console.error("OCR failed:", e);
+        setOcrError("이미지에서 텍스트를 추출하는 데 실패했습니다.");
+    } finally {
+        setIsOcrLoading(false);
+    }
+  };
+
 
   if (!isOpen) return null;
 
@@ -165,13 +300,57 @@ const AddEditMaterialModal: React.FC<AddEditMaterialModalProps> = ({ isOpen, onC
               />
             </div>
             <div>
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                인용 / 내용
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  인용 / 내용
+                </label>
+                {geminiApiKey && (
+                  <label htmlFor={`ocr-image-upload-material-${materialToEdit?.id || 'new'}`} className="cursor-pointer text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                    <PhotoIcon className="w-4 h-4" />
+                    이미지에서 텍스트 추출
+                    <input id={`ocr-image-upload-material-${materialToEdit?.id || 'new'}`} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} disabled={isOcrLoading} />
+                  </label>
+                )}
+              </div>
+              
+              {imagePreviewUrl && (
+                  <div className="p-3 my-2 border rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                      <div className="relative group max-w-xs mx-auto">
+                          <img src={imagePreviewUrl} alt="Preview" className="rounded-md max-h-40 w-auto mx-auto" />
+                          <button type="button" onClick={handleRemoveImage} className="absolute top-1 right-1 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" aria-label="이미지 제거">
+                              <XMarkIcon className="w-3 h-3"/>
+                          </button>
+                      </div>
+                      <div className="mt-3 text-center">
+                          <button
+                              type="button"
+                              onClick={handleOcr}
+                              disabled={isOcrLoading}
+                              className="inline-flex items-center justify-center gap-2 px-4 py-1.5 text-sm font-semibold text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 disabled:opacity-50"
+                          >
+                              {isOcrLoading ? (
+                                  <>
+                                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                      </svg>
+                                      <span>추출 중...</span>
+                                  </>
+                              ) : (
+                                  <span>텍스트 추출</span>
+                              )}
+                          </button>
+                      </div>
+                      {ocrError && <p className="text-xs text-red-500 text-center mt-2">{ocrError}</p>}
+                  </div>
+              )}
+
               <textarea
                 id="content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
                 rows={8}
                 className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-gray-900 dark:text-gray-100"
                 required

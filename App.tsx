@@ -690,6 +690,7 @@ const App: React.FC = () => {
           onSave={handleSaveMaterial}
           materialToEdit={materialToEdit}
           lastAddedMaterial={lastAddedMaterial}
+          geminiApiKey={geminiApiKey}
         />
       )}
       {isSermonModalOpen && (
@@ -701,6 +702,7 @@ const App: React.FC = () => {
           }}
           onSave={handleSaveSermon}
           sermonToEdit={sermonToEdit}
+          geminiApiKey={geminiApiKey}
         />
       )}
       {isSettingsModalOpen && (
