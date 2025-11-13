@@ -103,6 +103,15 @@ const GoogleApiGuideModal: React.FC<GoogleApiGuideModalProps> = ({ isOpen, onClo
                 <br/>
                 설정 창을 닫고, 헤더 또는 설정 창 안에 있는 <strong>[로그인]</strong>이나 <strong>[연결 및 동기화]</strong> 버튼을 눌러 Google 계정으로 로그인하면 동기화가 시작됩니다.
             </p>
+            <div className="not-prose my-4 p-3 bg-yellow-50 dark:bg-yellow-900/50 rounded-lg">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 font-sans">
+                    <strong className="font-bold">⚠️ 로그인 오류 해결 방법</strong>
+                    <br/>
+                    로그인 시 '액세스 권한이 없음(access_denied)' 또는 유사한 오류가 발생한다면, Google Cloud 프로젝트가 '테스트' 모드이기 때문입니다. 이 경우, 개발자에게 <strong>동기화를 사용할 구글 계정 이메일 주소</strong>를 알려주어 테스트 사용자로 등록해야 합니다.
+                    <br/>
+                    아래 이메일로 연락주세요: <a href="mailto:faworsh@gmail.com" className="font-bold underline">faworsh@gmail.com</a>
+                </p>
+            </div>
         </div>
         <div className="mt-6 flex justify-end flex-shrink-0">
             <button
