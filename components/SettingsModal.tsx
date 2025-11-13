@@ -77,6 +77,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const [localClientId, setLocalClientId] = useState(clientId);
     const [localGeminiApiKey, setLocalGeminiApiKey] = useState(geminiApiKey);
     const [isGeminiSettingsExpanded, setIsGeminiSettingsExpanded] = useState(false);
+    const [isDriveSettingsExpanded, setIsDriveSettingsExpanded] = useState(false);
 
 
     useEffect(() => {
@@ -217,59 +218,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
           
           <div className="border-t border-gray-200 dark:border-gray-700"></div>
-
-           {/* Drive Sync Settings */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">Google Drive 동기화 (데이터 백업 및 연동)</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              Google Cloud Platform에서 발급받은 키를 사용하여 데이터를 Drive에 백업하고 여러 기기에서 동기화합니다.
-            </p>
-            <div className="space-y-4 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
-              <div>
-                <label htmlFor="api-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Google Cloud API 키</label>
-                <input id="api-key" type="password" value={localApiKey} onChange={(e) => setLocalApiKey(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
-              </div>
-              <div>
-                <label htmlFor="client-id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">OAuth 2.0 클라이언트 ID</label>
-                <input id="client-id" type="password" value={localClientId} onChange={(e) => setLocalClientId(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
-              </div>
-              <div className="flex justify-between items-center gap-2 flex-wrap">
-                 <button onClick={onOpenApiGuide} className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
-                    <InformationCircleIcon className="w-4 h-4" />
-                    <span>발급 방법 안내</span>
-                 </button>
-                 <button onClick={handleApiSave} className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
-                    Drive API 정보 저장
-                </button>
-              </div>
-               <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
-               <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
-                    <p><strong>상태:</strong> {gdrive.isSignedIn ? `연결됨 (${syncStatusText[gdrive.syncStatus]})` : '연결되지 않음'}</p>
-                    {gdrive.isSignedIn && <p><strong>파일:</strong> {gdrive.driveFileName || '파일을 찾는 중...'}</p>}
-               </div>
-               <div className="grid grid-cols-2 gap-2 pt-2">
-                    {gdrive.isSignedIn ? 
-                        <button onClick={gdrive.handleSignOut} className="px-4 py-2 text-sm font-medium bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
-                           연결 끊기
-                        </button>
-                        :
-                        <button onClick={() => gdrive.handleSignIn(gdrive.syncData)} disabled={!gdrive.isReady} className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 disabled:bg-gray-400">
-                           연결 및 동기화
-                        </button>
-                    }
-                    <button onClick={gdrive.syncData} disabled={!gdrive.isSignedIn || gdrive.syncStatus === 'syncing'} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm hover:bg-gray-50 disabled:opacity-50">
-                        지금 동기화
-                    </button>
-                    {gdrive.isBackupAvailable && (
-                        <button onClick={gdrive.restoreFromBackup} className="col-span-2 px-4 py-2 text-sm font-medium text-yellow-800 bg-yellow-300 rounded-md shadow-sm hover:bg-yellow-400">
-                            동기화 전 백업 복원
-                        </button>
-                    )}
-               </div>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-200 dark:border-gray-700"></div>
           
           {/* AI (Gemini) API Settings */}
           <div>
@@ -311,6 +259,70 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                 </div>
             )}
+           </div>
+
+           <div className="border-t border-gray-200 dark:border-gray-700"></div>
+
+           {/* Drive Sync Settings */}
+           <div>
+              <button
+                onClick={() => setIsDriveSettingsExpanded(!isDriveSettingsExpanded)}
+                className="w-full flex justify-between items-center text-left text-lg font-medium text-gray-800 dark:text-white"
+                aria-expanded={isDriveSettingsExpanded}
+              >
+                  <span>Google Drive 동기화 (데이터 백업 및 연동)</span>
+                  <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${isDriveSettingsExpanded ? 'rotate-180' : ''}`} />
+              </button>
+              {isDriveSettingsExpanded && (
+                  <div className="mt-3">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                        Google Cloud Platform에서 발급받은 키를 사용하여 데이터를 Drive에 백업하고 여러 기기에서 동기화합니다.
+                      </p>
+                      <div className="space-y-4 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
+                        <div>
+                          <label htmlFor="api-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Google Cloud API 키</label>
+                          <input id="api-key" type="password" value={localApiKey} onChange={(e) => setLocalApiKey(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
+                        </div>
+                        <div>
+                          <label htmlFor="client-id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">OAuth 2.0 클라이언트 ID</label>
+                          <input id="client-id" type="password" value={localClientId} onChange={(e) => setLocalClientId(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
+                        </div>
+                        <div className="flex justify-between items-center gap-2 flex-wrap">
+                          <button onClick={onOpenApiGuide} className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                              <InformationCircleIcon className="w-4 h-4" />
+                              <span>발급 방법 안내</span>
+                          </button>
+                          <button onClick={handleApiSave} className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+                              Drive API 정보 저장
+                          </button>
+                        </div>
+                        <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
+                        <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+                              <p><strong>상태:</strong> {gdrive.isSignedIn ? `연결됨 (${syncStatusText[gdrive.syncStatus]})` : '연결되지 않음'}</p>
+                              {gdrive.isSignedIn && <p><strong>파일:</strong> {gdrive.driveFileName || '파일을 찾는 중...'}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                              {gdrive.isSignedIn ? 
+                                  <button onClick={gdrive.handleSignOut} className="px-4 py-2 text-sm font-medium bg-red-500 text-white rounded-md shadow-sm hover:bg-red-600">
+                                    연결 끊기
+                                  </button>
+                                  :
+                                  <button onClick={() => gdrive.handleSignIn(gdrive.syncData)} disabled={!gdrive.isReady} className="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 disabled:bg-gray-400">
+                                    연결 및 동기화
+                                  </button>
+                              }
+                              <button onClick={gdrive.syncData} disabled={!gdrive.isSignedIn || gdrive.syncStatus === 'syncing'} className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm hover:bg-gray-50 disabled:opacity-50">
+                                  지금 동기화
+                              </button>
+                              {gdrive.isBackupAvailable && (
+                                  <button onClick={gdrive.restoreFromBackup} className="col-span-2 px-4 py-2 text-sm font-medium text-yellow-800 bg-yellow-300 rounded-md shadow-sm hover:bg-yellow-400">
+                                      동기화 전 백업 복원
+                                  </button>
+                              )}
+                        </div>
+                      </div>
+                  </div>
+              )}
            </div>
         </div>
       </div>
