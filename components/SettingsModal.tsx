@@ -20,6 +20,7 @@ interface SettingsModalProps {
   hwpConversionEnabled: boolean;
   setHwpConversionEnabled: (enabled: boolean) => void;
   onOpenApiGuide: () => void;
+  onOpenGeminiApiGuide: () => void;
   isImportBackupAvailable: boolean;
   onRestoreFromImportBackup: () => void;
   onExportAll: () => void;
@@ -63,6 +64,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     hwpConversionEnabled,
     setHwpConversionEnabled,
     onOpenApiGuide,
+    onOpenGeminiApiGuide,
     isImportBackupAvailable,
     onRestoreFromImportBackup,
     onExportAll,
@@ -299,10 +301,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         <input id="gemini-api-key" type="password" value={localGeminiApiKey} onChange={(e) => setLocalGeminiApiKey(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
                     </div>
                     <div className="flex justify-between items-center gap-2 flex-wrap">
-                        <a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                        <button onClick={onOpenGeminiApiGuide} className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-400 hover:underline">
                             <InformationCircleIcon className="w-4 h-4" />
                             <span>Gemini API 키 발급 방법</span>
-                        </a>
+                        </button>
                         <button onClick={handleGeminiApiSave} className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
                             Gemini 키 저장
                         </button>

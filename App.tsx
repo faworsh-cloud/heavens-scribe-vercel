@@ -13,6 +13,7 @@ import AddEditMaterialModal from './components/AddEditMaterialModal';
 import AddEditSermonModal from './components/AddEditSermonModal';
 import SettingsModal from './components/SettingsModal';
 import GoogleApiGuideModal from './components/GoogleApiGuideModal';
+import GeminiApiGuideModal from './components/GeminiApiGuideModal';
 import GlobalSearchResults from './components/GlobalSearchResults';
 import UserGuideModal from './components/UserGuideModal';
 import AnnouncementModal from './components/AnnouncementModal';
@@ -109,6 +110,7 @@ const App: React.FC = () => {
   const [isSermonModalOpen, setIsSermonModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isApiGuideOpen, setIsApiGuideOpen] = useState(false);
+  const [isGeminiApiGuideOpen, setIsGeminiApiGuideOpen] = useState(false);
   const [isUserGuideModalOpen, setIsUserGuideModalOpen] = useState(false);
 
   // Edit State
@@ -154,7 +156,8 @@ const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         // Close the top-most/nested modals first
-        if (isApiGuideOpen) setIsApiGuideOpen(false);
+        if (isGeminiApiGuideOpen) setIsGeminiApiGuideOpen(false);
+        else if (isApiGuideOpen) setIsApiGuideOpen(false);
         else if (isSettingsModalOpen) setIsSettingsModalOpen(false);
         else if (isUserGuideModalOpen) setIsUserGuideModalOpen(false);
         else if (isAnnouncementModalOpen) setIsAnnouncementModalOpen(false);
@@ -165,6 +168,7 @@ const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
+    isGeminiApiGuideOpen,
     isApiGuideOpen, setIsApiGuideOpen,
     isSettingsModalOpen, setIsSettingsModalOpen,
     isUserGuideModalOpen, setIsUserGuideModalOpen,
@@ -716,6 +720,7 @@ const App: React.FC = () => {
           hwpConversionEnabled={hwpConversionEnabled}
           setHwpConversionEnabled={setHwpConversionEnabled}
           onOpenApiGuide={() => setIsApiGuideOpen(true)}
+          onOpenGeminiApiGuide={() => setIsGeminiApiGuideOpen(true)}
           isImportBackupAvailable={!!importBackup}
           onRestoreFromImportBackup={handleRestoreFromImportBackup}
           onExportAll={handleExportAll}
@@ -726,6 +731,7 @@ const App: React.FC = () => {
         />
       )}
       {isApiGuideOpen && <GoogleApiGuideModal isOpen={isApiGuideOpen} onClose={() => setIsApiGuideOpen(false)} />}
+      {isGeminiApiGuideOpen && <GeminiApiGuideModal isOpen={isGeminiApiGuideOpen} onClose={() => setIsGeminiApiGuideOpen(false)} />}
       {isUserGuideModalOpen && <UserGuideModal isOpen={isUserGuideModalOpen} onClose={() => setIsUserGuideModalOpen(false)} />}
       {announcement && isAnnouncementModalOpen && (
         <AnnouncementModal
