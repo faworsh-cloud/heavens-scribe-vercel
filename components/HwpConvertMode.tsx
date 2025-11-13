@@ -342,7 +342,6 @@ ${hwpContent}`;
                 parsedData = data ? [data] : [];
             }
             setPreviewData(parsedData);
-            setHwpContent('');
             handleRemoveImage();
 
         } catch (e) {
@@ -694,6 +693,13 @@ ${hwpContent}`;
                                 onChange={(e) => setHwpContent(e.target.value)}
                                 disabled={isLoading || isOcrLoading}
                             />
+                             {previewData && (
+                                <p className="text-sm text-green-700 dark:text-green-300 mt-2 text-center">
+                                    ✅ 변환이 완료되었습니다. 아래 미리보기 결과를 확인하세요.
+                                    <br/>
+                                    이곳의 텍스트를 수정하여 다시 변환할 수도 있습니다.
+                                </p>
+                            )}
                         </div>
                     </div>
                     <div className="mt-4">
