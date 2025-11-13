@@ -164,8 +164,9 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
                                     publicationInfo: { type: Type.STRING, description: "출판 정보. 텍스트에 명시되어 있지 않으면 생략합니다." },
                                     pages: { type: Type.STRING, description: "인용된 페이지 번호 (예: '72-75p')." },
                                     content: { type: Type.STRING, description: "인용문 내용. 인용문이 없는 경우 이 필드를 생략하거나 빈 문자열로 둡니다. 소주제가 있는 경우, '소주제: [소주제 내용]' 형식으로 내용의 맨 앞에 추가합니다." },
+                                    originalText: { type: Type.STRING, description: "이 자료를 추출한 원본 텍스트의 한 줄 또는 구절. 원본 텍스트와 정확히 일치해야 합니다." }
                                 },
-                                required: ["bookTitle", "pages"]
+                                required: ["bookTitle", "pages", "originalText"]
                             }
                         }
                     },
@@ -192,8 +193,9 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
                                 publicationInfo: { type: Type.STRING, description: "출판 정보." },
                                 pages: { type: Type.STRING, description: "페이지 번호." },
                                 content: { type: Type.STRING, description: "인용 내용. 없는 경우 생략합니다." },
+                                originalText: { type: Type.STRING, description: "이 자료를 추출한 원본 텍스트의 한 줄 또는 구절. 원본 텍스트와 정확히 일치해야 합니다." }
                             },
-                            required: ["book", "chapterStart", "bookTitle"]
+                            required: ["book", "chapterStart", "bookTitle", "originalText"]
                         }
                     }
                 }
@@ -229,11 +231,12 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
         - 대괄호 \`[]\`로 둘러싸인 인용문 내용은 소주제 뒤에 추가합니다.
         - 인용문이 없는 참고 자료의 경우, \`content\` 필드는 소주제만 포함하거나, 소주제도 없으면 빈 문자열로 둡니다.
 3.  **한 줄에 여러 자료 처리:** 한 줄에 여러 개의 참고 서적이 쉼표로 구분되어 나열될 수 있습니다 (예: '책1(저자1)1p, 책2(저자2)2p'). 각각을 별개의 material 객체로 분리하여 처리해야 합니다. 각 객체는 인용문(\`content\`)이 없습니다.
+4.  **원본 텍스트 포함:** 각 material 객체를 생성할 때, 해당 자료를 추출하는 데 사용된 원본 텍스트 라인 전체(예: '존 스토트...(IVP, 2015), p. 23. 내용...')를 'originalText' 필드에 정확하게 포함시켜야 합니다. 이것은 사용자가 변환되지 않은 텍스트를 식별하는 데 도움이 됩니다.
 
 **규칙:**
 - 텍스트 전체를 분석하여 모든 키워드와 관련 자료를 추출해야 합니다.
 - \`keyword\` 필드에는 '1. 간증'에서 숫자와 점을 제외한 '간증'만 포함되어야 합니다.
-- 필수 정보(\`bookTitle\`, \`pages\`)가 없는 자료는 결과에 포함하지 마세요.
+- 필수 정보(\`bookTitle\`, \`pages\`, \`originalText\`)가 없는 자료는 결과에 포함하지 마세요.
 - 최종 출력은 제공된 JSON 스키마를 완벽하게 준수해야 합니다.
 
 ---
@@ -250,10 +253,11 @@ ${hwpContent}`;
                         - 성경 위치: \`book\` (예: '마태복음'), \`chapterStart\`, \`verseStart\` 등을 성경 구절(예: '1-17)', '14-15)')에서 정확히 파싱합니다. 전체 텍스트의 맥락(예: '마태복음 1장')을 활용하여 \`book\`과 \`chapterStart\`를 결정하세요.
                         - 참고 서적 정보: \`bookTitle\`, \`author\`, \`pages\`를 추출합니다.
                         - \`content\`: 참고 서적 정보 뒤에 인용문이 있을 경우, 해당 내용을 추출합니다. **인용문이 없다면 이 필드를 생략하거나 빈 문자열로 두세요.**
+                    3.  **원본 텍스트 포함:** 각 자료 객체를 생성할 때, 해당 자료를 추출한 원본 텍스트 라인(예: '1-17)IVP성경난제주석...')을 'originalText' 필드에 정확하게 포함시켜야 합니다.
 
                     **규칙:**
                     - 성경 구절과 참고 서적 정보를 명확하게 분리하여 인식해야 합니다.
-                    - 필수 정보(\`book\`, \`chapterStart\`, \`bookTitle\`)가 없는 자료는 결과에 포함하지 마세요.
+                    - 필수 정보(\`book\`, \`chapterStart\`, \`bookTitle\`, \`originalText\`)가 없는 자료는 결과에 포함하지 마세요.
                     - 최종 출력은 제공된 JSON 스키마를 완벽하게 준수해야 합니다.
 
                     ---
@@ -302,10 +306,25 @@ ${hwpContent}`;
             const data = JSON.parse(jsonStr);
             
             let parsedData;
+            const originalTextSnippets: string[] = [];
+
             if (conversionType === 'keyword') {
                 parsedData = data || [];
+                 (parsedData as any[]).forEach(kw => {
+                    (kw.materials || []).forEach((mat: any) => {
+                        if (mat.originalText) {
+                            originalTextSnippets.push(mat.originalText);
+                        }
+                    });
+                });
             } else if (conversionType === 'bible') {
                 const rawMaterials = data.materials || [];
+                rawMaterials.forEach((item: any) => {
+                    if (item.originalText) {
+                        originalTextSnippets.push(item.originalText);
+                    }
+                });
+
                 const locationsMap = new Map<string, BibleMaterialLocation>();
                 rawMaterials.forEach((item: any) => {
                     const locationKey = `${item.book}-${item.chapterStart}-${item.verseStart || ''}-${item.chapterEnd || ''}-${item.verseEnd || ''}`;
@@ -318,12 +337,10 @@ ${hwpContent}`;
                     };
                     
                     if (locationsMap.has(locationKey)) {
-                        // FIX: Added logic to update the `updatedAt` timestamp for existing locations.
                         const existingLocation = locationsMap.get(locationKey)!;
                         existingLocation.materials.push({ ...material, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
                         existingLocation.updatedAt = new Date().toISOString();
                     } else {
-                        // FIX: Added missing `updatedAt` property to align with the `BibleMaterialLocation` type definition.
                         locationsMap.set(locationKey, {
                           id: crypto.randomUUID(),
                           createdAt: new Date().toISOString(),
@@ -343,6 +360,28 @@ ${hwpContent}`;
             }
             setPreviewData(parsedData);
             handleRemoveImage();
+
+            if ((conversionType === 'keyword' || conversionType === 'bible') && originalTextSnippets.length > 0) {
+                const originalLines = hwpContent.split('\n');
+                const snippetsSet = new Set(originalTextSnippets.map(s => s.trim()).filter(Boolean));
+                
+                const remainingLines = originalLines.filter(line => {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) return true;
+                    
+                    let isConverted = false;
+                    for (const snippet of snippetsSet) {
+                        if (trimmedLine.includes(snippet)) {
+                            isConverted = true;
+                            break;
+                        }
+                    }
+                    return !isConverted;
+                });
+                
+                setHwpContent(remainingLines.join('\n').trim());
+            }
+
 
         } catch (e) {
             console.error("Conversion failed:", e);
@@ -695,9 +734,9 @@ ${hwpContent}`;
                             />
                              {previewData && (
                                 <p className="text-sm text-green-700 dark:text-green-300 mt-2 text-center">
-                                    ✅ 변환이 완료되었습니다. 아래 미리보기 결과를 확인하세요.
+                                    ✅ 변환 완료! 변환된 내용은 아래 미리보기에서 확인 및 수정할 수 있습니다.
                                     <br/>
-                                    이곳의 텍스트를 수정하여 다시 변환할 수도 있습니다.
+                                    위 입력창에는 변환되지 않은 텍스트가 남아있으니, 수정 후 다시 시도해 보세요.
                                 </p>
                             )}
                         </div>
