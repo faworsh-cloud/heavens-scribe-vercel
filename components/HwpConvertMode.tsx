@@ -41,9 +41,9 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
           <div className="flex-1 p-4 sm:p-6 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50">
             <div className="text-center max-w-lg p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
               <Cog6ToothIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">HWP 변환 기능이 비활성화되었습니다.</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">AI 변환 기능이 비활성화되었습니다.</h2>
               <p className="mt-2 text-gray-600 dark:text-gray-400">
-                이 기능을 사용하려면 설정에서 'HWP 자동 변환 기능 사용' 옵션을 켜주세요.
+                이 기능을 사용하려면 설정에서 'AI 변환 기능 사용' 옵션을 켜주세요.
               </p>
               <button
                 onClick={onOpenSettings}
@@ -583,7 +583,7 @@ ${hwpContent}`;
         <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-gray-50 dark:bg-gray-800/50">
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-6">
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white">HWP 자료 자동 변환</h1>
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white">AI 변환</h1>
                     <p className="mt-2 text-gray-600 dark:text-gray-400">
                         변환할 자료 유형을 선택하고 내용을 붙여넣거나 이미지를 업로드하면 AI가 앱 형식에 맞게 정리합니다.
                     </p>
@@ -592,7 +592,7 @@ ${hwpContent}`;
                 {!geminiApiKey && (
                   <div className="mb-6 p-4 bg-yellow-100 dark:bg-yellow-900/50 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-200 rounded-md">
                       <p className="font-bold">API 키 필요</p>
-                      <p>HWP 변환 기능을 사용하려면 Gemini API 키가 필요합니다. 우측 상단의 설정 아이콘(⚙️)을 클릭하여 API 키를 등록해주세요.</p>
+                      <p>AI 변환 기능을 사용하려면 Gemini API 키가 필요합니다. 우측 상단의 설정 아이콘(⚙️)을 클릭하여 API 키를 등록해주세요.</p>
                   </div>
                 )}
 

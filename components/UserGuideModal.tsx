@@ -76,7 +76,7 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
             <h4>💎 고급 기능</h4>
             <ul>
                  <li>
-                    <strong>HWP 자료 변환 (AI 기능):</strong> '아래아 한글(HWP)' 등에서 복사한 텍스트나 책을 찍은 이미지를 앱의 데이터 형식으로 자동 변환합니다. 변환할 자료 유형(키워드, 성경, 설교)을 선택하고 내용을 붙여넣거나 이미지를 업로드하세요. 변환 결과를 미리보고 수정하여 앱에 바로 추가하거나 별도의 엑셀 파일로 다운로드할 수 있습니다. <strong>(이 기능은 설정에서 활성화하고 Gemini API 키를 등록해야 사용 가능하며, 사용량에 따라 비용이 발생할 수 있습니다.)</strong>
+                    <strong>AI 변환:</strong> '아래아 한글(HWP)' 등에서 복사한 텍스트나 책을 찍은 이미지를 앱의 데이터 형식으로 자동 변환합니다. 변환할 자료 유형(키워드, 성경, 설교)을 선택하고 내용을 붙여넣거나 이미지를 업로드하세요. 변환 결과를 미리보고 수정하여 앱에 바로 추가하거나 별도의 엑셀 파일로 다운로드할 수 있습니다. <strong>(이 기능은 설정에서 활성화하고 Gemini API 키를 등록해야 사용 가능하며, 사용량에 따라 비용이 발생할 수 있습니다.)</strong>
                 </li>
                  <li>
                     <strong>Google Drive 동기화:</strong> 엑셀 파일 관리와는 <strong>별개의 기능</strong>으로, 데이터를 Google Drive에 실시간으로 백업하고 여러 기기에서 동기화할 수 있습니다. 엑셀 파일을 수동으로 옮기지 않고도 다른 컴퓨터나 브라우저에서 작업을 이어갈 수 있습니다.
@@ -89,7 +89,7 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
             <ul>
                 <li><strong>화면:</strong> 앱 전체의 글자 크기를 조절하거나, 성경 모드에서 책 이름을 약어로 표시할 수 있습니다.</li>
                 <li><strong>데이터 관리:</strong> 데이터 가져오기(Import)를 잘못했을 경우 이전 상태로 복원하는 기능, 템플릿 다운로드, 데이터 내보내기/가져오기 등을 제공합니다.</li>
-                <li><strong>API 설정:</strong> Google Drive 동기화 및 HWP 변환(Gemini)에 필요한 API 키를 관리합니다.</li>
+                <li><strong>API 설정:</strong> Google Drive 동기화 및 AI 변환(Gemini)에 필요한 API 키를 관리합니다.</li>
             </ul>
         </div>
         <div className="mt-6 flex justify-end flex-shrink-0">

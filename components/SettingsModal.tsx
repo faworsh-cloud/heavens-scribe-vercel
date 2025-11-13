@@ -88,7 +88,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const handleApiSave = () => {
         setApiKey(localApiKey);
         setClientId(localClientId);
-        alert('API 정보가 저장되었습니다. 앱을 새로고침하여 적용해주세요.');
+        alert('Google Drive API 정보가 저장되었습니다. 앱을 새로고침하여 적용해주세요.');
         onClose();
     };
 
@@ -218,14 +218,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
            {/* Drive Sync Settings */}
           <div>
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">Google Drive 동기화</h3>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">Google Drive 동기화 (데이터 백업 및 연동)</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Google Cloud Platform에서 발급받은 키를 사용하여 데이터를 Drive에 백업하고 여러 기기에서 동기화합니다.
+            </p>
             <div className="space-y-4 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
               <div>
-                <label htmlFor="api-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300">API 키</label>
+                <label htmlFor="api-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Google Cloud API 키</label>
                 <input id="api-key" type="password" value={localApiKey} onChange={(e) => setLocalApiKey(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
               </div>
               <div>
-                <label htmlFor="client-id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">클라이언트 ID</label>
+                <label htmlFor="client-id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">OAuth 2.0 클라이언트 ID</label>
                 <input id="client-id" type="password" value={localClientId} onChange={(e) => setLocalClientId(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
               </div>
               <div className="flex justify-between items-center gap-2 flex-wrap">
@@ -234,7 +237,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <span>발급 방법 안내</span>
                  </button>
                  <button onClick={handleApiSave} className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
-                    API 정보 저장
+                    Drive API 정보 저장
                 </button>
               </div>
                <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
@@ -273,13 +276,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="w-full flex justify-between items-center text-left text-lg font-medium text-gray-800 dark:text-white"
                 aria-expanded={isGeminiSettingsExpanded}
             >
-                <span>AI 변환 기능 (Gemini)</span>
+                <span>AI 변환 기능 (Google AI Gemini)</span>
                 <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${isGeminiSettingsExpanded ? 'rotate-180' : ''}`} />
             </button>
             {isGeminiSettingsExpanded && (
                 <div className="mt-3 space-y-4 bg-gray-100 dark:bg-gray-700/50 p-4 rounded-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">HWP 자동 변환 기능 사용</span>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">AI 변환 기능 사용</span>
                       <button
                         type="button" onClick={() => setHwpConversionEnabled(!hwpConversionEnabled)}
                         className={`${hwpConversionEnabled ? 'bg-primary-600' : 'bg-gray-200 dark:bg-gray-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2`}
@@ -289,10 +292,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       </button>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        HWP 변환 기능을 사용하려면 Google AI Studio에서 발급받은 Gemini API 키가 필요합니다. 이 키에 대한 사용 비용은 사용자에게 직접 청구됩니다.
+                        AI 변환 기능을 사용하려면 Google AI Studio에서 발급받은 Gemini API 키가 필요합니다. 이 키는 AI 모델 사용량에 따라 사용자에게 직접 비용을 청구하는 데 사용됩니다.
                     </p>
                     <div>
-                        <label htmlFor="gemini-api-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Gemini API 키</label>
+                        <label htmlFor="gemini-api-key" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Google AI Studio API 키</label>
                         <input id="gemini-api-key" type="password" value={localGeminiApiKey} onChange={(e) => setLocalGeminiApiKey(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm" />
                     </div>
                     <div className="flex justify-between items-center gap-2 flex-wrap">
