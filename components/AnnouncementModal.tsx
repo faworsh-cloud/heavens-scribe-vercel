@@ -7,10 +7,65 @@ interface AnnouncementModalProps {
   content: string;
 }
 
+const ParsedLine: React.FC<{ line: string }> = ({ line }) => {
+    // Regex for bold **text** and links [text](url)
+    const regex = /(\*\*(.*?)\*\*)|(\[([^\]]+)\]\((https?:\/\/[^\s)]+)\))/g;
+    
+    // FIX: Replaced `JSX.Element` with `React.ReactNode` to resolve "Cannot find namespace 'JSX'" error.
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(line)) !== null) {
+        // Push text before match
+        if (match.index > lastIndex) {
+            parts.push(line.substring(lastIndex, match.index));
+        }
+        
+        // Check if it is a bold match
+        if (match[2] !== undefined) {
+            parts.push(<strong key={lastIndex}>{match[2]}</strong>);
+        }
+        // Check if it is a link match
+        else if (match[4] !== undefined && match[5] !== undefined) {
+            parts.push(
+                <a href={match[5]} key={lastIndex} target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline">
+                    {match[4]}
+                </a>
+            );
+        }
+        
+        lastIndex = regex.lastIndex;
+    }
+
+    // Push remaining text
+    if (lastIndex < line.length) {
+        parts.push(line.substring(lastIndex));
+    }
+
+    return <p>{parts.map((part, i) => <React.Fragment key={i}>{part}</React.Fragment>)}</p>;
+};
+
+
 const AnnouncementModal: React.FC<AnnouncementModalProps> = ({ isOpen, onClose, content }) => {
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
   if (!isOpen) return null;
+
+  const renderContent = (text: string) => {
+    return text.split('\n').map((line, index) => {
+      if (line.startsWith('## ')) {
+        return <h2 key={index} className="text-xl font-bold mt-4 mb-2">{line.substring(3)}</h2>;
+      }
+      if (line === '---') {
+        return <hr key={index} className="my-4" />;
+      }
+      if (line.trim() === '') {
+        return <p key={index}></p>;
+      }
+      return <ParsedLine key={index} line={line} />;
+    });
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-[100] flex justify-center items-center p-4">
@@ -20,18 +75,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({ isOpen, onClose, 
         </button>
         <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white flex-shrink-0">📢 공지사항</h2>
         <div className="prose prose-sm dark:prose-invert max-w-none flex-grow overflow-y-auto pr-4 -mr-4 whitespace-pre-wrap">
-          {content.split('\n').map((line, index) => {
-            if (line.startsWith('## ')) {
-              return <h2 key={index} className="text-xl font-bold mt-4 mb-2">{line.substring(3)}</h2>;
-            }
-            if (line.startsWith('**') && line.endsWith('**')) {
-              return <p key={index} className="font-bold">{line.substring(2, line.length - 2)}</p>;
-            }
-            if (line === '---') {
-              return <hr key={index} className="my-4" />;
-            }
-            return <p key={index}>{line}</p>;
-          })}
+          {renderContent(content)}
         </div>
         <div className="mt-6 flex justify-between items-center flex-shrink-0">
             <div className="flex items-center">

@@ -29,8 +29,13 @@ interface AppData {
 }
 
 const CURRENT_ANNOUNCEMENT: Announcement | null = {
-    id: 'announcement-help-guide-20240728', // Unique ID for this announcement version
+    id: 'announcement-video-guide-20240729', // Unique ID for this announcement version
     content: `**'도움말'은 시작 화면 우측 상단에 '?'를 클릭하시면 볼 수 있습니다. 꼭 읽어 주세요.**
+
+## 🎬 사용법 영상 가이드
+
+**1. 기본 사용법:** [영상 보기](https://youtu.be/qllvQ-X14ps?si=-oUNWR5HvC81WIN3)
+**2. AI 변환 기능 사용법:** [영상 보기](https://youtu.be/5BhDQNxM14A?si=HFEYwGfOCucyh-9L)
 
 ## 자료 관리 방법은 2가지 입니다.
 
