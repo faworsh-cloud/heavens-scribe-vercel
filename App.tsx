@@ -119,7 +119,7 @@ const App: React.FC = () => {
   const [lastAddedMaterial, setLastAddedMaterial] = useState<Omit<Material, 'id' | 'createdAt'> | null>(null);
   const [editContext, setEditContext] = useState<any>(null);
 
-  // Keyword Mode State
+  // Keyword/Topic Mode State
   const [selectedKeywordId, setSelectedKeywordId] = useLocalStorage<string | null>('selected-keyword-id', null);
 
   // Bible Mode State
@@ -400,16 +400,16 @@ const App: React.FC = () => {
     }
     const lowerCaseTerm = globalSearchTerm.toLowerCase();
     
-    const keywordResults = keywords.map(keyword => {
-      const matchingMaterials = keyword.materials.filter(m =>
+    const keywordResults = keywords.map(item => {
+      const matchingMaterials = item.materials.filter(m =>
         m.bookTitle.toLowerCase().includes(lowerCaseTerm) ||
         m.author.toLowerCase().includes(lowerCaseTerm) ||
         m.content.toLowerCase().includes(lowerCaseTerm)
       );
-      if (keyword.name.toLowerCase().includes(lowerCaseTerm) || matchingMaterials.length > 0) {
+      if (item.name.toLowerCase().includes(lowerCaseTerm) || matchingMaterials.length > 0) {
         return {
-          ...keyword,
-          materials: keyword.name.toLowerCase().includes(lowerCaseTerm) ? keyword.materials : matchingMaterials,
+          ...item,
+          materials: item.name.toLowerCase().includes(lowerCaseTerm) ? item.materials : matchingMaterials,
         };
       }
       return null;
@@ -620,7 +620,6 @@ const App: React.FC = () => {
               onAddKeyword={handleAddKeyword}
               onDeleteKeyword={handleDeleteKeyword}
               onAddMaterial={() => handleOpenMaterialModal(null, { mode: 'keyword', selectedKeywordId })}
-              // FIX: Corrected the incomplete 'selected' variable to 'selectedKeywordId'
               onEditMaterial={(material) => handleOpenMaterialModal(material, { mode: 'keyword', keywordId: selectedKeywordId })}
               onDeleteMaterial={(id) => {
                 if(selectedKeywordId) {
@@ -746,5 +745,4 @@ const App: React.FC = () => {
   );
 };
 
-// FIX: Add default export to resolve module import error in index.tsx
 export default App;

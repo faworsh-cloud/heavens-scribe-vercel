@@ -4,13 +4,13 @@ import TopicList from './TopicList';
 import MaterialList from './MaterialList';
 import { SearchIcon, XMarkIcon } from './icons';
 
-interface KeywordModeProps {
-  keywords: Keyword[];
-  selectedKeyword: Keyword | null;
-  selectedKeywordId: string | null;
-  onSelectKeyword: (id: string) => void;
-  onAddKeyword: (name: string) => void;
-  onDeleteKeyword: (id: string) => void;
+interface TopicModeProps {
+  topics: Keyword[];
+  selectedTopic: Keyword | null;
+  selectedTopicId: string | null;
+  onSelectTopic: (id: string) => void;
+  onAddTopic: (name: string) => void;
+  onDeleteTopic: (id: string) => void;
   onAddMaterial: () => void;
   onEditMaterial: (material: Material) => void;
   onDeleteMaterial: (id: string) => void;
@@ -18,13 +18,13 @@ interface KeywordModeProps {
   setIsSidebarOpen: (isOpen: boolean) => void;
 }
 
-const KeywordMode: React.FC<KeywordModeProps> = ({
-  keywords,
-  selectedKeyword,
-  selectedKeywordId,
-  onSelectKeyword,
-  onAddKeyword,
-  onDeleteKeyword,
+const TopicMode: React.FC<TopicModeProps> = ({
+  topics,
+  selectedTopic,
+  selectedTopicId,
+  onSelectTopic,
+  onAddTopic,
+  onDeleteTopic,
   onAddMaterial,
   onEditMaterial,
   onDeleteMaterial,
@@ -33,56 +33,56 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
-  const { newKeywords, oldKeywords } = useMemo(() => {
-    if (keywords.length === 0) {
-      return { newKeywords: [], oldKeywords: [] };
+  const { newItems, oldItems } = useMemo(() => {
+    if (topics.length === 0) {
+      return { newItems: [], oldItems: [] };
     }
 
-    const sortedByDate = [...keywords].sort((a, b) => {
+    const sortedByDate = [...topics].sort((a, b) => {
       const dateA = new Date(a.updatedAt || a.createdAt).getTime();
       const dateB = new Date(b.updatedAt || b.createdAt).getTime();
       return dateB - dateA;
     });
 
-    const mostRecentKeyword = sortedByDate[0];
-    const otherKeywords = sortedByDate.slice(1);
+    const mostRecentItem = sortedByDate[0];
+    const otherItems = sortedByDate.slice(1);
 
-    otherKeywords.sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
+    otherItems.sort((a, b) => a.name.localeCompare(b.name, 'ko-KR'));
 
-    return { newKeywords: [mostRecentKeyword], oldKeywords: otherKeywords };
-  }, [keywords]);
+    return { newItems: [mostRecentItem], oldItems: otherItems };
+  }, [topics]);
 
   const filteredResult = useMemo(() => {
     if (!searchTerm) {
-      return { newKeywords, oldKeywords };
+      return { newItems, oldItems };
     }
 
-    const filterAndMap = (keyword: Keyword): Keyword | null => {
+    const filterAndMap = (topic: Keyword): Keyword | null => {
       const lowerSearchTerm = searchTerm.toLowerCase();
-      const matchingMaterials = keyword.materials.filter(material =>
+      const matchingMaterials = topic.materials.filter(material =>
         material.content.toLowerCase().includes(lowerSearchTerm) ||
         material.bookTitle.toLowerCase().includes(lowerSearchTerm) ||
         material.author.toLowerCase().includes(lowerSearchTerm)
       );
-      if (keyword.name.toLowerCase().includes(lowerSearchTerm) || matchingMaterials.length > 0) {
-        return { ...keyword, materials: keyword.name.toLowerCase().includes(lowerSearchTerm) ? keyword.materials : matchingMaterials };
+      if (topic.name.toLowerCase().includes(lowerSearchTerm) || matchingMaterials.length > 0) {
+        return { ...topic, materials: topic.name.toLowerCase().includes(lowerSearchTerm) ? topic.materials : matchingMaterials };
       }
       return null;
     };
     
-    const filteredNew = newKeywords.map(filterAndMap).filter((k): k is Keyword => k !== null);
-    const filteredOld = oldKeywords.map(filterAndMap).filter((k): k is Keyword => k !== null);
+    const filteredNew = newItems.map(filterAndMap).filter((t): t is Keyword => t !== null);
+    const filteredOld = oldItems.map(filterAndMap).filter((t): t is Keyword => t !== null);
 
-    return { newKeywords: filteredNew, oldKeywords: filteredOld };
-  }, [newKeywords, oldKeywords, searchTerm]);
+    return { newItems: filteredNew, oldItems: filteredOld };
+  }, [newItems, oldItems, searchTerm]);
   
-  const displayedKeyword = useMemo(() => {
-    if (!selectedKeywordId) return null;
-    if (!searchTerm) return selectedKeyword;
+  const displayedTopic = useMemo(() => {
+    if (!selectedTopicId) return null;
+    if (!searchTerm) return selectedTopic;
     
-    const allFiltered = [...filteredResult.newKeywords, ...filteredResult.oldKeywords];
-    return allFiltered.find(k => k.id === selectedKeywordId) || null;
-  }, [searchTerm, selectedKeyword, selectedKeywordId, filteredResult]);
+    const allFiltered = [...filteredResult.newItems, ...filteredResult.oldItems];
+    return allFiltered.find(t => t.id === selectedTopicId) || null;
+  }, [searchTerm, selectedTopic, selectedTopicId, filteredResult]);
 
 
   return (
@@ -111,7 +111,7 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
             </div>
             <input
                 type="text"
-                placeholder="키워드 또는 내용 검색..."
+                placeholder="주제 또는 내용 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -119,20 +119,21 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
         </div>
         <div className="flex-1 overflow-hidden">
           <TopicList
-              title="키워드(단어)"
-              placeholder="새 키워드"
-              newItems={filteredResult.newKeywords}
-              oldItems={filteredResult.oldKeywords}
-              selectedItemId={selectedKeywordId}
-              onSelectItem={onSelectKeyword}
-              onAddItem={onAddKeyword}
-              onDeleteItem={onDeleteKeyword}
+              title="주제"
+              placeholder="새 주제"
+              newItems={filteredResult.newItems}
+              oldItems={filteredResult.oldItems}
+              selectedItemId={selectedTopicId}
+              onSelectItem={onSelectTopic}
+              onAddItem={onAddTopic}
+              onDeleteItem={onDeleteTopic}
           />
         </div>
       </aside>
       <main className="flex-1 p-4 overflow-y-auto">
         <MaterialList
-          selectedItem={displayedKeyword || null}
+          selectedItem={displayedTopic || null}
+          itemType="주제"
           onAddMaterial={onAddMaterial}
           onEditMaterial={onEditMaterial}
           onDeleteMaterial={onDeleteMaterial}
@@ -142,4 +143,4 @@ const KeywordMode: React.FC<KeywordModeProps> = ({
   );
 };
 
-export default KeywordMode;
+export default TopicMode;

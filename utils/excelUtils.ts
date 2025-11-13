@@ -237,7 +237,7 @@ export const downloadTemplate = () => {
 
     const keywordSheet = XLSX.utils.json_to_sheet([], {header: ['키워드', '서명', '저자', '출판사항', '페이지', '내용']});
     XLSX.utils.book_append_sheet(wb, keywordSheet, "키워드 자료");
-
+    
     const bibleSheet = XLSX.utils.json_to_sheet([], {header: ['성경', '시작 장', '시작 절', '끝 장', '끝 절', '서명', '저자', '출판사항', '페이지', '내용']});
     XLSX.utils.book_append_sheet(wb, bibleSheet, "성경 자료");
 
@@ -256,40 +256,43 @@ export const importAllData = (file: File): Promise<{ workbook: any; keywords: Ke
                 const data = e.target?.result;
                 const workbook = XLSX.read(data, { type: 'binary' });
                 
-                // Keywords
-                const keywordSheet = workbook.Sheets["키워드 자료"];
-                const keywordJson: any[] = keywordSheet ? XLSX.utils.sheet_to_json(keywordSheet) : [];
-                const keywordMap = new Map<string, Omit<Material, 'id' | 'createdAt'>[]>();
-                keywordJson.forEach(row => {
-                    const keywordName = row['키워드']?.toString().trim();
-                    if (!keywordName) return;
+                const parseKeywordSheet = (sheetName: string, itemName: string): Keyword[] => {
+                    const sheet = workbook.Sheets[sheetName];
+                    const json: any[] = sheet ? XLSX.utils.sheet_to_json(sheet) : [];
+                    const map = new Map<string, Omit<Material, 'id' | 'createdAt'>[]>();
+                    json.forEach(row => {
+                        const name = row[itemName]?.toString().trim();
+                        if (!name) return;
 
-                    if (!keywordMap.has(keywordName)) {
-                        keywordMap.set(keywordName, []);
-                    }
-                    keywordMap.get(keywordName)!.push({
-                        bookTitle: row['서명'] || '',
-                        author: row['저자'] || '',
-                        publicationInfo: row['출판사항'] || '',
-                        pages: String(row['페이지'] || ''),
-                        content: row['내용'] || '',
+                        if (!map.has(name)) {
+                            map.set(name, []);
+                        }
+                        map.get(name)!.push({
+                            bookTitle: row['서명'] || '',
+                            author: row['저자'] || '',
+                            publicationInfo: row['출판사항'] || '',
+                            pages: String(row['페이지'] || ''),
+                            content: row['내용'] || '',
+                        });
                     });
-                });
-                const keywords: Keyword[] = Array.from(keywordMap.entries()).map(([name, materialsData]) => {
-                    const now = new Date().toISOString();
-                    const materials = materialsData.map(m => ({
-                        ...m,
-                        id: crypto.randomUUID(),
-                        createdAt: now,
-                    }))
-                    return {
-                        id: crypto.randomUUID(),
-                        name,
-                        materials,
-                        createdAt: now,
-                        updatedAt: now
-                    };
-                });
+                    return Array.from(map.entries()).map(([name, materialsData]) => {
+                        const now = new Date().toISOString();
+                        const materials = materialsData.map(m => ({
+                            ...m,
+                            id: crypto.randomUUID(),
+                            createdAt: now,
+                        }))
+                        return {
+                            id: crypto.randomUUID(),
+                            name,
+                            materials,
+                            createdAt: now,
+                            updatedAt: now
+                        };
+                    });
+                };
+
+                const keywords = parseKeywordSheet("키워드 자료", "키워드");
 
                 // Bible data
                 const bibleSheet = workbook.Sheets["성경 자료"];

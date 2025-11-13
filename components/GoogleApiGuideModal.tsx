@@ -25,6 +25,14 @@ const GoogleApiGuideModal: React.FC<GoogleApiGuideModalProps> = ({ isOpen, onClo
                 아래 안내에 따라 두 가지 종류의 <strong>'인증 코드' (API 키, OAuth 클라이언트 ID)</strong>를 발급받아 설정에 입력해주세요.
                 과정이 조금 길지만, 차근차근 따라하시면 누구나 쉽게 설정할 수 있습니다.
             </p>
+            
+            <div className="not-prose my-4 p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg">
+                <p className="text-sm text-blue-800 dark:text-blue-200 font-sans">
+                    <strong className="font-bold">🤔 왜 이 과정이 필요한가요?</strong>
+                    <br/>
+                    Google은 보안을 매우 중요하게 생각합니다. 이 앱이 Google Play 스토어에 공식적으로 등록된 앱이 아니기 때문에, 사용자는 '자신이 개발한 앱'이 '자신의 파일'에 접근하는 것을 허용한다는 의미로 직접 이 인증 절차를 거쳐야 합니다. 이 과정은 Google에 <strong>"이 앱은 내가 신뢰하며, 내 Drive 파일에 접근해도 좋습니다"</strong>라고 알려주는 것과 같습니다. 사용자의 데이터는 오직 사용자의 Google Drive 계정에만 저장됩니다.
+                </p>
+            </div>
 
             <h4>1단계: Google Cloud 프로젝트 만들기 (작업 공간 생성)</h4>
             <ol>
