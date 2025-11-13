@@ -92,6 +92,13 @@ const UserGuideModal: React.FC<UserGuideModalProps> = ({ isOpen, onClose }) => {
                     <strong>Google Drive 동기화:</strong> 엑셀 파일 관리와는 <strong>별개의 기능</strong>으로, 데이터를 Google Drive에 실시간으로 백업하고 여러 기기에서 동기화할 수 있습니다. 엑셀 파일을 수동으로 옮기지 않고도 다른 컴퓨터나 브라우저에서 작업을 이어갈 수 있습니다.
                     <br/>
                     <small>* 이 기능은 앱의 내부 데이터를 Google Drive와 동기화하며, 엑셀 파일 자체를 동기화하는 것은 아닙니다. 설정 메뉴에서 Google API 키와 클라이언트 ID를 등록해야 사용할 수 있습니다.</small>
+                    <div className="not-prose mt-2 p-3 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
+                        <p className="text-xs text-yellow-800 dark:text-yellow-200 font-sans">
+                            <strong className="font-semibold">⚠️ 중요 안내:</strong>
+                            <br />
+                            현재 Google Drive 동기화 기능은 '테스트' 모드로 운영되고 있어, 개발자에게 접근 권한을 요청해야 합니다. 동기화를 사용하고자 하는 Google 계정 이메일 주소를 개발자(<a href="mailto:faworsh@gmail.com" className="font-bold underline">faworsh@gmail.com</a>)에게 보내주시면 테스트 사용자로 등록해 드리겠습니다. 이 과정 없이 동기화를 시도하면 '액세스 권한 없음' 오류가 발생할 수 있습니다.
+                        </p>
+                    </div>
                 </li>
             </ul>
 
