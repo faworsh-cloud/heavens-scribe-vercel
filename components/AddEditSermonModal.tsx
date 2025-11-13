@@ -308,11 +308,14 @@ const AddEditSermonModal: React.FC<AddEditSermonModalProps> = ({ isOpen, onClose
                   설교 내용
                 </label>
                  {geminiApiKey && (
-                  <label htmlFor={`ocr-image-upload-sermon-${sermonToEdit?.id || 'new'}`} className="cursor-pointer text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
-                    <PhotoIcon className="w-4 h-4" />
-                    이미지에서 텍스트 추출
-                    <input id={`ocr-image-upload-sermon-${sermonToEdit?.id || 'new'}`} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} disabled={isOcrLoading} />
-                  </label>
+                  <div className="text-right">
+                    <label htmlFor={`ocr-image-upload-sermon-${sermonToEdit?.id || 'new'}`} className="cursor-pointer text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center justify-end gap-1">
+                      <PhotoIcon className="w-4 h-4" />
+                      이미지에서 텍스트 추출
+                      <input id={`ocr-image-upload-sermon-${sermonToEdit?.id || 'new'}`} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} disabled={isOcrLoading} />
+                    </label>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">파일을 드래그하거나 Ctrl+V로 붙여넣으세요</p>
+                  </div>
                 )}
               </div>
 
