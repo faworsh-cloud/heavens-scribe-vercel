@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { DocumentArrowRightIcon, ArrowDownTrayIcon, PlusIcon, TrashIcon, Cog6ToothIcon, ArrowUpTrayIcon, XMarkIcon } from './icons';
 import { BibleMaterialLocation, Material, Sermon } from '../types';
@@ -56,7 +56,7 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
         );
       }
     
-    const handleFile = (file: File | undefined | null) => {
+    const handleFile = useCallback((file: File | undefined | null) => {
         if (file && file.type.startsWith('image/')) {
             setUploadedImage(file);
             if (imagePreviewUrl) {
@@ -69,7 +69,38 @@ const HwpConvertMode: React.FC<HwpConvertModeProps> = ({ onImportData, geminiApi
         } else if (file) { // if a file is present but not an image
             setError('이미지 파일(jpg, png 등)을 선택해주세요.');
         }
-    };
+    }, [imagePreviewUrl]);
+
+    useEffect(() => {
+        const handlePaste = (event: ClipboardEvent) => {
+            if (isLoading || isOcrLoading) return;
+            const items = event.clipboardData?.items;
+            if (!items) return;
+
+            let imageFile: File | null = null;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.startsWith('image/')) {
+                    const blob = items[i].getAsFile();
+                    if (blob) {
+                        const extension = blob.type.split('/')[1] || 'png';
+                        imageFile = new File([blob], `pasted-image-${Date.now()}.${extension}`, { type: blob.type });
+                        break; 
+                    }
+                }
+            }
+            
+            if (imageFile) {
+                event.preventDefault();
+                handleFile(imageFile);
+            }
+        };
+
+        window.addEventListener('paste', handlePaste);
+
+        return () => {
+            window.removeEventListener('paste', handlePaste);
+        };
+    }, [handleFile, isLoading, isOcrLoading]);
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         handleFile(e.target.files?.[0]);
@@ -702,7 +733,7 @@ ${hwpContent}`;
                                 >
                                     <ArrowUpTrayIcon className="w-8 h-8 mx-auto mb-2"/>
                                     <span className="font-semibold">이미지 파일 선택</span>
-                                    <span className="text-xs">또는 파일을 여기로 드래그하세요</span>
+                                    <span className="text-xs">또는 파일을 드래그하거나 붙여넣으세요(Ctrl+V)</span>
                                     <span className="text-xs mt-2 text-gray-400 dark:text-gray-500">
                                         AI가 이미지 속 텍스트를 인식하여 아래 입력창에 자동으로 채워줍니다.
                                     </span>
